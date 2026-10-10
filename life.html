@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Dale's classes and due dates, with a 72-hour flag and a one-button weekly plan.">
+<title>What's due</title>
+<meta name="theme-color" content="#F7F4EE">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="What's due">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<script>
+  // The install file only loads from a web address; a double-clicked file can't use it.
+  if (location.protocol.startsWith('http')) {
+    const manifest = document.createElement('link');
+    manifest.rel = 'manifest';
+    manifest.href = 'manifest.webmanifest';
+    document.head.appendChild(manifest);
+  }
+</script>
+<style>
+:root {
+  --display: ui-serif, "Iowan Old Style", "Sitka Text", Cambria, Georgia, serif;
+  --body: system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --ground: #F7F4EE; --surface: #FFFFFF; --ink: #1E1D1B; --muted: #65615B; --rule: #E2DDD3;
+  --accent: #2F5D50; --flag: #B4441F; --flag-bg: #FBEDE6;
+  --c1: #2F6B9A; --c2: #A2513B; --c3: #4F7A4A; --c4: #7B5A99; --c5: #9A6F12; --c6: #3E7C7B;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 400 1rem/1.5 var(--body); -webkit-text-size-adjust: 100%; }
+.wrap { width: min(100% - 2rem, 44rem); margin-inline: auto; padding-block: 1.5rem 4rem; }
+button, input, select, textarea { font: inherit; font-size: 1rem; }
+button { min-height: 44px; }
+.quiet { background: none; border: 0; padding: 0 0.5rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+h1, h2, h3 { font-family: var(--display); font-weight: 400; margin: 0; }
+h1 { font-size: 1.75rem; line-height: 1.15; }
+h2 { font-size: 1.375rem; line-height: 1.2; }
+h3 { font-size: 1.125rem; line-height: 1.3; }
+
+/* Header and course key */
+.top { padding-bottom: 1rem; border-bottom: 1px solid var(--rule); }
+.sub { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.875rem; }
+.key { list-style: none; margin: 0.75rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.375rem 1.25rem; font-size: 0.875rem; color: var(--muted); }
+.key li { display: flex; align-items: center; gap: 0.5rem; }
+.key li::before { content: ""; width: 4px; height: 1rem; border-radius: 2px; background: var(--c); }
+
+section { margin-top: 2.5rem; }
+
+/* The 72-hour block */
+.soon { margin-top: 1.5rem; }
+.soon.loud { background: var(--flag-bg); border-left: 4px solid var(--flag); border-radius: 0 8px 8px 0; padding: 1rem 1rem 0.25rem; }
+.soon.loud .item:last-child { border-bottom: 0; }
+.soon.calm p { margin: 0; color: var(--muted); }
+
+/* Item rows */
+.day { margin-top: 1.5rem; }
+.day:first-of-type { margin-top: 0.5rem; }
+.items { list-style: none; margin: 0.25rem 0 0; padding: 0; }
+.item {
+  display: grid;
+  grid-template-columns: 4px minmax(0, 1fr) auto;
+  grid-template-areas: "bar title when" "bar left left" "bar meta actions" "bar note note";
+  column-gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.item .bar { grid-area: bar; background: var(--c); border-radius: 2px; }
+.item .title { grid-area: title; margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.item .when { grid-area: when; margin: 0; padding-top: 0.125rem; font-size: 0.875rem; color: var(--muted); text-align: right; white-space: nowrap; }
+.item .meta { grid-area: meta; margin: 0; align-self: center; font-size: 0.875rem; color: var(--muted); }
+.item .left { grid-area: left; margin: 0.125rem 0 0; font-size: 0.875rem; font-weight: 600; color: var(--flag); }
+.item .note { grid-area: note; margin: 0 0 0.25rem; font-size: 0.875rem; color: var(--muted); }
+.item .actions { grid-area: actions; display: flex; justify-content: flex-end; margin-right: -0.5rem; }
+.item.done .title { font-weight: 400; color: var(--muted); text-decoration: line-through; }
+.item.done .bar { opacity: 0.35; }
+.item.wide .title { grid-column: 2 / 4; }
+.empty { margin: 0.5rem 0 0; color: var(--muted); }
+
+/* Plan */
+.primary { background: var(--accent); color: var(--surface); border: 0; border-radius: 8px; padding: 0.75rem 1.5rem; font-weight: 600; cursor: pointer; }
+.primary:hover { background: var(--ink); }
+.plan-out { margin-top: 1rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 1rem 1.25rem; }
+.plan-out h3 { margin-top: 1.25rem; }
+.plan-out p { margin: 0; }
+.plan-out .lead { font-weight: 600; }
+.plan-out .outro { margin-top: 1.25rem; color: var(--muted); }
+.plan-out ul { margin: 0.25rem 0 0; padding-left: 1.125rem; }
+.plan-out li { margin: 0.25rem 0; }
+.plan-tools { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; margin-left: -0.5rem; }
+.flash { font-size: 0.875rem; color: var(--muted); }
+
+/* To-do, weekly goals, training */
+.secondary { justify-self: start; background: none; border: 1px solid var(--accent); border-radius: 8px; padding: 0.5rem 1.25rem; color: var(--accent); font-weight: 600; cursor: pointer; }
+.secondary:hover { background: var(--surface); }
+.todo-form { display: grid; gap: 1rem; margin-top: 1rem; }
+.goals { list-style: none; margin: 0.5rem 0 0; padding: 0; }
+.goal { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; column-gap: 0.75rem; padding: 0.25rem 0; border-bottom: 1px solid var(--rule); }
+.goal p { margin: 0; }
+.goal .count { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.goal.met .label { color: var(--muted); text-decoration: line-through; }
+.goal-acts { display: flex; margin-right: -0.5rem; }
+.tip { margin: 0.75rem 0 0; font-size: 0.875rem; color: var(--muted); }
+.race { margin-top: 1rem; max-width: 14rem; }
+
+/* Math homework from the course sheet */
+.sync { margin: 0.25rem 0 0; font-size: 0.875rem; color: var(--muted); }
+.sync a { color: var(--accent); text-underline-offset: 3px; }
+.hw { list-style: none; margin: 0.5rem 0 0; padding: 0; }
+.hw li { display: grid; grid-template-columns: 4px minmax(0, 1fr); column-gap: 0.75rem; padding: 0.5rem 0; border-bottom: 1px solid var(--rule); }
+.hw li::before { content: ""; grid-row: 1 / span 3; background: var(--c); border-radius: 2px; }
+.hw p { grid-column: 2; margin: 0; overflow-wrap: anywhere; }
+.hw .title { font-weight: 600; }
+.hw .examples { font-size: 0.875rem; color: var(--muted); }
+details.more { margin-top: 0.25rem; border-top: 0; padding-top: 0; }
+details.more > summary { font: 400 0.875rem/1.5 var(--body); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+details.more > summary::after { content: none; }
+
+/* Add and Past */
+details { margin-top: 2.5rem; border-top: 1px solid var(--rule); padding-top: 0.5rem; }
+summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; list-style: none; font: 400 1.375rem/1.2 var(--display); }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; margin-left: auto; color: var(--muted); font-family: var(--body); }
+details[open] > summary::after { content: "\2013"; }
+form { display: grid; gap: 1rem; margin: 1rem 0 0.5rem; }
+label { display: grid; gap: 0.375rem; font-size: 0.875rem; color: var(--muted); }
+input, select { width: 100%; min-width: 0; min-height: 44px; padding: 0.5rem 0.75rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-end { display: flex; align-items: center; gap: 1rem; }
+
+footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.875rem; color: var(--muted); }
+footer p { margin: 0; }
+footer .quiet { font-size: 0.875rem; margin-right: -0.5rem; }
+#storage-warn { flex-basis: 100%; color: var(--flag); }
+</style>
+</head>
+<body>
+<noscript><p class="wrap">This preview has scripts turned off. Open the file in Safari or Chrome.</p></noscript>
+<div class="wrap">
+  <header class="top">
+    <h1>What's due</h1>
+    <p class="sub" id="today"></p>
+    <ul class="key" id="key" aria-label="Course colors"></ul>
+  </header>
+
+  <section class="soon" id="soon" aria-live="polite"></section>
+
+  <section aria-labelledby="todo-h">
+    <h2 id="todo-h">To-do</h2>
+    <div id="todo"></div>
+    <form id="todo-form" class="todo-form" autocomplete="off">
+      <label>New to-do
+        <input name="text" required>
+      </label>
+      <div class="pair">
+        <label>When
+          <select name="when">
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+            <option value="date">Pick a date</option>
+            <option value="someday">Someday</option>
+          </select>
+        </label>
+        <label id="todo-date-wrap" hidden>Date
+          <input type="date" name="date">
+        </label>
+      </div>
+      <button type="submit" class="secondary">Add to-do</button>
+    </form>
+  </section>
+
+  <section aria-labelledby="goals-h">
+    <h2 id="goals-h">Goals this week</h2>
+    <p class="sub" id="goals-range"></p>
+    <ul class="goals" id="goals"></ul>
+    <p class="tip">Start with Cal Poly alumni and people you've met in person. They're much more likely to respond.</p>
+    <p class="tip" id="goals-last" hidden></p>
+  </section>
+
+  <section aria-labelledby="week-h">
+    <h2 id="week-h">This week</h2>
+    <div id="week"></div>
+  </section>
+
+  <section aria-labelledby="later-h">
+    <h2 id="later-h">Later</h2>
+    <div id="later"></div>
+  </section>
+
+  <section aria-labelledby="train-h">
+    <h2 id="train-h">Training</h2>
+    <p class="sub" id="train-phase"></p>
+    <div class="race">
+      <label>Race date
+        <input type="date" id="race-date">
+      </label>
+    </div>
+    <ul class="items" id="train-week"></ul>
+    <p class="tip" id="train-count"></p>
+  </section>
+
+  <section aria-labelledby="math-h">
+    <h2 id="math-h">Math homework</h2>
+    <p class="sync" id="math-sync"></p>
+    <div id="math-hw"></div>
+  </section>
+
+  <section>
+    <button type="button" class="primary" id="plan-btn">Plan my Sunday</button>
+    <div class="plan-out" id="plan-out" hidden></div>
+    <div class="plan-tools" id="plan-tools" hidden>
+      <button type="button" class="quiet" id="copy-btn">Copy plan</button>
+      <span class="flash" id="copy-flash" aria-live="polite"></span>
+    </div>
+  </section>
+
+  <details id="add">
+    <summary>Add an item</summary>
+    <form id="add-form" autocomplete="off">
+      <label>Course
+        <input name="course" list="courses" required placeholder="BUS 346">
+      </label>
+      <datalist id="courses"></datalist>
+      <label>Title
+        <input name="title" required placeholder="Discussion #6">
+      </label>
+      <label>Type
+        <select name="type">
+          <option value="assignment">Assignment</option>
+          <option value="quiz">Quiz</option>
+          <option value="exam">Exam</option>
+          <option value="project">Project</option>
+        </select>
+      </label>
+      <div class="pair">
+        <label>Due date
+          <input type="date" name="date" required>
+        </label>
+        <label>Time
+          <input type="time" name="time" value="23:59">
+        </label>
+      </div>
+      <div class="form-end">
+        <button type="submit" class="primary">Add</button>
+        <span class="flash" id="add-flash" aria-live="polite"></span>
+      </div>
+    </form>
+  </details>
+
+  <details id="past-box" hidden>
+    <summary id="past-sum">Past</summary>
+    <ul class="items" id="past"></ul>
+  </details>
+
+  <footer>
+    <p>Saved in this browser only.</p>
+    <button type="button" class="quiet" id="reset">Reset to starting data</button>
+    <p id="storage-warn" hidden>This browser is not saving changes. Open the file in Safari or Chrome.</p>
+  </footer>
+</div>
+
+<script>
+const STORE_KEY = 'life-crm';
+const SEED_VERSION = 3;
+const TONE = 'blunt'; // 'blunt' or 'gentle'
+
+const BUS_QUIZ = 'Canvas. 100% needed for credit, unlimited tries.';
+const IS_REVIEW = 'Canvas. 2 attempts.';
+const IS_SHEET = 'SIMnet. 2 attempts.';
+const MATH_HWC = 'In class, last 10 minutes. 1 or 2 problems straight from the homework.';
+const MATH_QUIZ = 'In class. Based on the homework problems and lecture examples.';
+const MATH_TENT = 'Day not posted yet. Quizzes have been on Fridays; check the course calendar.';
+
+// [course, title, type, [year, month, day, hour, minute], notes]
+// An hour of null means "in class" with no time in the syllabus yet.
+// Dates are local time. Month is 1-12 here and converted when building the Date.
+const SEED = [
+  ['BIO 222', 'Discussion Question #6: Forests and Forest Ecosystems', 'assignment', [2026, 10, 12, 9, 0], 'Post a summary, then reply to one classmate.'],
+  ['BIO 222', 'Quiz 6: Birds of California', 'quiz', [2026, 10, 12, 9, 0], ''],
+  ['BIO 222', 'Quiz 7: Amphibians and Reptiles', 'quiz', [2026, 10, 19, 9, 0], ''],
+  ['BIO 222', 'Quiz 8: Plants of California', 'quiz', [2026, 10, 26, 9, 0], ''],
+  ['BIO 222', 'Exam 2', 'exam', [2026, 11, 2, 9, 0], 'In class, 9:00 to 10:30 am, room 08-123.'],
+  ['BIO 222', 'Quiz 9: Climate & Energy', 'quiz', [2026, 11, 16, 9, 0], ''],
+  ['BIO 222', 'Quiz 10: Coastal & Marine Species', 'quiz', [2026, 11, 30, 9, 0], ''],
+  ['BIO 222', 'Final Exam', 'exam', [2026, 12, 14, 9, 30], 'Cumulative. Canvas lists 9:30 am; confirm the start time.'],
+  ['BIO 222', 'Final Photo ID Quiz', 'exam', [2026, 12, 16, 9, 0], 'Every species from the term, on Canvas. 75 points.'],
+
+  ['BUS 2215', 'Quiz #5', 'quiz', [2026, 10, 9, 23, 59], BUS_QUIZ],
+  ['BUS 2215', 'HW #8', 'assignment', [2026, 10, 13, 8, 0], ''],
+  ['BUS 2215', 'Exam #2', 'exam', [2026, 10, 15, 10, 30], 'In class. Bring a basic calculator; no TI or HP.'],
+  ['BUS 2215', 'Chapter 8 SmartBook', 'assignment', [2026, 10, 20, 8, 0], ''],
+  ['BUS 2215', 'HW #9', 'assignment', [2026, 10, 22, 8, 0], ''],
+  ['BUS 2215', 'Quiz #6', 'quiz', [2026, 10, 23, 23, 59], BUS_QUIZ],
+  ['BUS 2215', 'Chapter 9 SmartBook', 'assignment', [2026, 10, 27, 8, 0], ''],
+  ['BUS 2215', 'Chapter 10 SmartBook', 'assignment', [2026, 10, 29, 8, 0], ''],
+  ['BUS 2215', 'HW #10', 'assignment', [2026, 10, 29, 8, 0], ''],
+  ['BUS 2215', 'Quiz #7', 'quiz', [2026, 10, 30, 23, 59], BUS_QUIZ],
+  ['BUS 2215', 'HW #11', 'assignment', [2026, 11, 3, 8, 0], ''],
+  ['BUS 2215', 'Chapter 11 SmartBook', 'assignment', [2026, 11, 5, 8, 0], ''],
+  ['BUS 2215', 'Quiz #8', 'quiz', [2026, 11, 6, 23, 59], BUS_QUIZ],
+  ['BUS 2215', 'HW #12', 'assignment', [2026, 11, 10, 8, 0], ''],
+  ['BUS 2215', 'Chapter 12 SmartBook', 'assignment', [2026, 11, 12, 8, 0], ''],
+  ['BUS 2215', 'Quiz #9', 'quiz', [2026, 11, 13, 23, 59], BUS_QUIZ],
+  ['BUS 2215', 'HW #13', 'assignment', [2026, 11, 17, 8, 0], ''],
+  ['BUS 2215', 'Chapter 14 SmartBook', 'assignment', [2026, 11, 19, 8, 0], ''],
+  ['BUS 2215', 'Quiz #10', 'quiz', [2026, 11, 20, 23, 59], BUS_QUIZ],
+  ['BUS 2215', 'HW #14', 'assignment', [2026, 12, 1, 8, 0], ''],
+  ['BUS 2215', 'Chapter 16 SmartBook', 'assignment', [2026, 12, 3, 8, 0], ''],
+  ['BUS 2215', 'Quiz #11', 'quiz', [2026, 12, 4, 23, 59], BUS_QUIZ],
+  ['BUS 2215', 'HW #15', 'assignment', [2026, 12, 8, 8, 0], ''],
+  ['BUS 2215', 'Quiz #12', 'quiz', [2026, 12, 11, 23, 59], BUS_QUIZ],
+  ['BUS 2215', 'Final Exam', 'exam', [2026, 12, 17, 10, 0], 'Cumulative. 10:00 am to 12:30 pm in your classroom.'],
+
+  ['BUS 3391', 'Data and Databases Chapter Review', 'assignment', [2026, 10, 16, 23, 59], IS_REVIEW],
+  ['BUS 3391', 'Guided Spreadsheet Assignment 4', 'assignment', [2026, 10, 16, 23, 59], IS_SHEET],
+  ['BUS 3391', 'Advanced Spreadsheet Assignment 4', 'assignment', [2026, 10, 16, 23, 59], IS_SHEET],
+  ['BUS 3391', 'Advanced Spreadsheet Assignment 5', 'assignment', [2026, 10, 23, 23, 59], IS_SHEET],
+  ['BUS 3391', 'Data Analytics and BI Chapter Review', 'assignment', [2026, 10, 30, 23, 59], IS_REVIEW],
+  ['BUS 3391', 'Guided Spreadsheet Assignment 6', 'assignment', [2026, 10, 30, 23, 59], IS_SHEET],
+  ['BUS 3391', 'Advanced Spreadsheet Assignment 6', 'assignment', [2026, 10, 30, 23, 59], IS_SHEET],
+  ['BUS 3391', 'System Analysis, Design and Implementation Chapter Review', 'assignment', [2026, 11, 6, 23, 59], IS_REVIEW],
+  ['BUS 3391', 'Project B', 'project', [2026, 11, 6, 23, 59], 'Group project. Details on Canvas.'],
+  ['BUS 3391', 'Emerging Technologies Chapter Review', 'assignment', [2026, 11, 13, 23, 59], IS_REVIEW],
+  ['BUS 3391', 'Guided Spreadsheet Assignment 7', 'assignment', [2026, 11, 20, 23, 59], IS_SHEET],
+  ['BUS 3391', 'Advanced Spreadsheet Assignment 7', 'assignment', [2026, 11, 20, 23, 59], IS_SHEET],
+  ['BUS 3391', 'Exam 2', 'exam', [2026, 12, 2, null, 0], 'In class. Course reader concepts plus Excel formulas.'],
+  ['BUS 3391', 'Project C', 'project', [2026, 12, 16, 18, 0], 'Group or solo. Syllabus lists 6:00 pm for Section 08; check yours.'],
+
+  ['MATH 1267', 'Homework Check 8', 'quiz', [2026, 10, 14, 13, 0], MATH_HWC],
+  ['MATH 1267', 'Quiz 5', 'quiz', [2026, 10, 16, 13, 0], MATH_QUIZ],
+  ['MATH 1267', 'Homework Check 9', 'quiz', [2026, 10, 21, 13, 0], MATH_HWC],
+  ['MATH 1267', 'Quiz 6', 'quiz', [2026, 10, 23, 13, 0], MATH_QUIZ],
+  ['MATH 1267', 'Homework Check 10', 'quiz', [2026, 10, 28, 13, 0], MATH_HWC],
+  ['MATH 1267', 'Quiz 7', 'quiz', [2026, 10, 30, 13, 0], MATH_QUIZ],
+  ['MATH 1267', 'Exam 2', 'exam', [2026, 11, 6, 13, 0], 'In class, room 10-222. Bring a scientific calculator.'],
+  ['MATH 1267', 'Quiz 8 (date tentative)', 'quiz', [2026, 11, 13, 13, 0], MATH_TENT],
+  ['MATH 1267', 'Quiz 9 (date tentative)', 'quiz', [2026, 11, 20, 13, 0], MATH_TENT],
+  ['MATH 1267', 'Quiz 10 (date tentative)', 'quiz', [2026, 12, 4, 13, 0], MATH_TENT],
+  ['MATH 1267', 'Quiz 13 (date tentative)', 'quiz', [2026, 12, 11, 13, 0], 'Calendar calls it Quiz 13, probably a typo for 11. ' + MATH_TENT],
+  ['MATH 1267', 'Final Exam', 'exam', [2026, 12, 18, 10, 0], 'Cumulative. 10:00 am to 12:30 pm, room 10-222. Can replace your lowest midterm.'],
+];
+
+const TYPES = { assignment: 'Assignment', quiz: 'Quiz', exam: 'Exam', project: 'Project' };
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const HOUR = 3600000;
+const GRACE = 48 * HOUR; // a missed item stays flagged this long, then moves to Past
+
+// Exams and in-class quizzes happen once; they can't be turned in late.
+const inPerson = it => it.type === 'exam' || it.course === 'MATH 1267' || /\bin class\b/i.test(it.notes || '');
+
+// Missed, but recent enough to still matter.
+function stillOverdue(it, now) {
+  const d = due(it);
+  return !it.done && !inPerson(it) && d < now && now - d < GRACE;
+}
+
+const $ = id => document.getElementById(id);
+const keyOf = it => it.course + '|' + it.title;
+const inClass = it => it.due[3] == null;
+// "In class" items count from 8:00 am, so the warning comes early rather than late.
+const due = it => new Date(it.due[0], it.due[1] - 1, it.due[2], inClass(it) ? 8 : it.due[3], it.due[4]);
+const timeText = it => inClass(it) ? 'in class' : fmtTime(due(it));
+const atTime = it => inClass(it) ? ', in class' : ' at ' + fmtTime(due(it));
+const byDue = (a, b) => due(a) - due(b);
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+
+/* ---------- Storage ---------- */
+
+let storageOk = true;
+
+function seedItems(deleted) {
+  const skip = new Set(deleted);
+  return SEED
+    .map((s, i) => ({ id: 's' + i, course: s[0], title: s[1], type: s[2], due: s[3], notes: s[4], done: false }))
+    .filter(it => !skip.has(keyOf(it)));
+}
+
+function load() {
+  let stored = null;
+  try { stored = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { storageOk = false; }
+  if (stored && Array.isArray(stored.items) && stored.seedVersion >= SEED_VERSION) {
+    stored.deleted = stored.deleted || [];
+    return stored;
+  }
+  // First visit, or the file has newer starting data: write the seed,
+  // keep done marks, keep items added by hand, and skip seed items deleted by hand.
+  const deleted = (stored && stored.deleted) || [];
+  const fresh = { seedVersion: SEED_VERSION, items: seedItems(deleted), deleted };
+  if (stored) ['todos', 'goals', 'training'].forEach(k => { if (stored[k]) fresh[k] = stored[k]; });
+  if (stored && Array.isArray(stored.items)) {
+    const doneKeys = new Set(stored.items.filter(i => i.done).map(keyOf));
+    fresh.items.forEach(i => { if (doneKeys.has(keyOf(i))) i.done = true; });
+    const have = new Set(fresh.items.map(keyOf));
+    stored.items.filter(i => (i.added || i.synced) && !have.has(keyOf(i))).forEach(i => fresh.items.push(i));
+  }
+  return fresh;
+}
+
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); storageOk = true; }
+  catch (e) { storageOk = false; }
+  $('storage-warn').hidden = storageOk;
+}
+
+let state = load();
+save();
+
+/* ---------- Dates ---------- */
+
+function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+function dayDiff(d, now) { return Math.round((startOfDay(d) - startOfDay(now)) / 86400000); }
+
+function fmtTime(d) {
+  const h = d.getHours(), m = d.getMinutes();
+  return (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? ' am' : ' pm');
+}
+
+function dayLabel(d, now) {
+  const diff = dayDiff(d, now);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  return DAYS[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate();
+}
+
+function shortDay(d, now) {
+  const diff = dayDiff(d, now);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  if (diff > 1 && diff < 7) return DAYS[d.getDay()].slice(0, 3);
+  return MONTHS[d.getMonth()] + ' ' + d.getDate();
+}
+
+function inSentence(d, now) {
+  const label = dayLabel(d, now);
+  return label === 'Today' || label === 'Tomorrow' ? label.toLowerCase() : 'on ' + label;
+}
+
+function timeLeft(d, now) {
+  const ms = Math.abs(d - now);
+  const mins = Math.round(ms / 60000);
+  const hrs = Math.round(ms / HOUR);
+  let s;
+  if (mins < 60) s = mins + (mins === 1 ? ' minute' : ' minutes');
+  else if (hrs < 48) s = hrs + (hrs === 1 ? ' hour' : ' hours');
+  else {
+    const days = Math.floor(hrs / 24), rest = hrs % 24;
+    s = days + ' days' + (rest ? ' ' + rest + (rest === 1 ? ' hour' : ' hours') : '');
+  }
+  return d < now ? 'overdue by ' + s : 'due in ' + s;
+}
+
+/* ---------- Courses ---------- */
+
+function courseOrder() {
+  const seen = [];
+  SEED.forEach(s => { if (!seen.includes(s[0])) seen.push(s[0]); });
+  state.items.forEach(i => { if (!seen.includes(i.course)) seen.push(i.course); });
+  return seen;
+}
+
+function colorFor(course, order) {
+  return 'var(--c' + ((order.indexOf(course) % 6) + 1) + ')';
+}
+
+/* ---------- Rendering ---------- */
+
+function row(it, mode, now, order) {
+  const d = due(it);
+  const li = el('li', 'item' + (it.done ? ' done' : ''));
+  li.style.setProperty('--c', colorFor(it.course, order));
+  li.appendChild(el('span', 'bar'));
+  li.appendChild(el('p', 'title', it.title));
+  const t = timeText(it);
+  li.appendChild(el('p', 'when', mode === 'day' ? t.charAt(0).toUpperCase() + t.slice(1) : shortDay(d, now) + (inClass(it) ? ', ' : ' ') + t));
+
+  if (mode === 'soon') {
+    const left = timeLeft(d, now);
+    li.appendChild(el('p', 'left', left.charAt(0).toUpperCase() + left.slice(1)));
+  }
+  li.appendChild(el('p', 'meta', it.course + ' · ' + (TYPES[it.type] || 'Assignment')));
+
+  const actions = el('div', 'actions');
+  const doneBtn = el('button', 'quiet', it.done ? 'Undo' : 'Done');
+  doneBtn.type = 'button';
+  doneBtn.dataset.act = 'toggle';
+  doneBtn.dataset.id = it.id;
+  doneBtn.setAttribute('aria-label', (it.done ? 'Mark not done: ' : 'Mark done: ') + it.course + ' ' + it.title);
+  const delBtn = el('button', 'quiet', 'Delete');
+  delBtn.type = 'button';
+  delBtn.dataset.act = 'delete';
+  delBtn.dataset.id = it.id;
+  delBtn.setAttribute('aria-label', 'Delete: ' + it.course + ' ' + it.title);
+  actions.append(doneBtn, delBtn);
+  li.appendChild(actions);
+
+  if (it.notes) li.appendChild(el('p', 'note', it.notes));
+  return li;
+}
+
+function renderDays(list, mount, emptyText, now, order) {
+  mount.textContent = '';
+  if (!list.length) { mount.appendChild(el('p', 'empty', emptyText)); return; }
+  let current = null, ul = null;
+  list.forEach(it => {
+    const d = due(it);
+    const k = d.toDateString();
+    if (k !== current) {
+      current = k;
+      const box = el('div', 'day');
+      box.appendChild(el('h3', null, dayLabel(d, now)));
+      ul = el('ul', 'items');
+      box.appendChild(ul);
+      mount.appendChild(box);
+    }
+    ul.appendChild(row(it, 'day', now, order));
+  });
+}
+
+function render() {
+  const now = new Date();
+  const order = courseOrder();
+  const in72 = new Date(now.getTime() + 72 * HOUR);
+  const in7 = new Date(now.getTime() + 7 * 24 * HOUR);
+
+  // Every item lands in exactly one place.
+  const soon = [], week = [], later = [], past = [];
+  [...state.items].sort(byDue).forEach(it => {
+    const d = due(it);
+    if (d < now) (stillOverdue(it, now) ? soon : past).push(it);
+    else if (!it.done && d <= in72) soon.push(it);
+    else if (d <= in7) week.push(it);
+    else later.push(it);
+  });
+
+  const open = state.items.filter(i => !i.done).length;
+  $('today').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+    + ' · ' + open + ' open';
+
+  const key = $('key');
+  key.textContent = '';
+  const used = order.filter(c => state.items.some(i => i.course === c));
+  used.forEach(c => {
+    const li = el('li', null, c);
+    li.style.setProperty('--c', colorFor(c, order));
+    key.appendChild(li);
+  });
+
+  const soonBox = $('soon');
+  soonBox.textContent = '';
+  if (soon.length) {
+    soonBox.className = 'soon loud';
+    soonBox.appendChild(el('h2', null, 'Due in the next 72 hours'));
+    const ul = el('ul', 'items');
+    soon.forEach(it => ul.appendChild(row(it, 'soon', now, order)));
+    soonBox.appendChild(ul);
+  } else {
+    soonBox.className = 'soon calm';
+    soonBox.appendChild(el('p', null, 'Nothing due in the next 72 hours.'));
+  }
+
+  renderDays(week, $('week'), 'Nothing else due this week.', now, order);
+  renderDays(later, $('later'), 'Nothing scheduled after this week.', now, order);
+
+  const pastBox = $('past-box');
+  pastBox.hidden = !past.length;
+  $('past-sum').textContent = 'Past (' + past.length + ')';
+  const pastList = $('past');
+  pastList.textContent = '';
+  past.reverse().forEach(it => pastList.appendChild(row(it, 'past', now, order)));
+
+  const dl = $('courses');
+  dl.textContent = '';
+  used.forEach(c => { const o = el('option'); o.value = c; dl.appendChild(o); });
+
+  renderMath(now, order);
+  renderTodo(now);
+  renderGoals(now);
+  renderTraining(now);
+}
+
+/* ---------- Plan my Sunday ---------- */
+
+function advice(it, blunt) {
+  const morning = due(it).getHours() < 12;
+  if (it.type === 'exam') return blunt ? 'Exam. Review the night before, sleep, show up early.' : 'Exam day. Rest the night before; you have prepared for this.';
+  if (it.type === 'project') return blunt ? 'Submit early. Late work is not accepted.' : 'Aim to submit with time to spare.';
+  if (morning) return blunt ? 'Due in the morning. Finish it the night before.' : 'Due in the morning, so wrap it up the evening before.';
+  return blunt ? "Don't leave it for 11 pm." : 'Give yourself a buffer before the deadline.';
+}
+
+function buildPlan() {
+  const now = new Date();
+  const today = startOfDay(now);
+  const end = addDays(today, 7);
+  const blunt = TONE === 'blunt';
+  const name = it => it.course + ' ' + it.title;
+
+  const open = state.items.filter(i => !i.done).sort(byDue);
+  const overdue = open.filter(i => stillOverdue(i, now));
+  const week = open.filter(i => due(i) >= now && due(i) < end);
+  const big = open.filter(i => (i.type === 'exam' || i.type === 'project') && due(i) >= now && due(i) < addDays(today, 14));
+  const exams = week.filter(i => i.type === 'exam').length;
+
+  let intro;
+  if (!week.length) intro = blunt ? 'Nothing due in the next 7 days. Get ahead on what is next.' : 'A clear week. A good time to get ahead.';
+  else {
+    const things = week.length + (week.length === 1 ? ' thing' : ' things');
+    const examPart = exams ? ', ' + exams + (exams === 1 ? ' of them an exam' : ' of them exams') : '';
+    intro = blunt ? things + ' due in the next 7 days' + examPart + '.' : 'You have ' + things + ' coming up this week' + examPart + '. One day at a time.';
+  }
+
+  const blocks = [];
+  blocks.push({ h: 'Goals this week', lines: GOALS.map(g => g.plan + '.').concat("Start with Cal Poly alumni and people you've met in person.") });
+  if (overdue.length) {
+    blocks.push({ h: 'Overdue', lines: overdue.map(i => blunt
+      ? name(i) + ' was due ' + shortDay(due(i), now) + atTime(i) + '. Submit it now or email your professor today.'
+      : name(i) + ' slipped past its due date. If it can still go in, start there.') });
+  }
+  if (big.length) {
+    blocks.push({ h: 'Start now', lines: big.map(i => {
+      const days = dayDiff(due(i), now);
+      const when = inSentence(due(i), now) + atTime(i);
+      return blunt
+        ? name(i) + ' is ' + when + '. ' + (days <= 1 ? 'That is basically now.' : days + ' days out. Study a little every day until then.')
+        : name(i) + ' is ' + when + '. A short review each day will carry you.';
+    }) });
+  }
+  for (let n = 0; n < 7; n++) {
+    const day = addDays(today, n);
+    const items = week.filter(i => dayDiff(due(i), day) === 0);
+    let lines;
+    if (items.length) {
+      lines = items.map(i => { const t = timeText(i); return t.charAt(0).toUpperCase() + t.slice(1) + ' · ' + name(i) + '. ' + advice(i, blunt); });
+    } else {
+      const next = open.find(i => due(i) >= addDays(day, 1));
+      lines = [next
+        ? (blunt ? 'Nothing due. Get ahead on ' + name(next) + '.' : 'Nothing due. A good day to chip away at ' + name(next) + '.')
+        : (blunt ? 'Nothing due.' : 'Nothing due. Rest up.')];
+    }
+    lines.unshift('Workout: ' + workoutFor(day).text);
+    const key = ymd(day);
+    state.todos
+      .filter(t => !t.done && (t.date === key || (n === 0 && t.date && t.date < key)))
+      .forEach(t => lines.push('To-do: ' + t.text));
+    blocks.push({ h: dayLabel(day, now), lines });
+  }
+  const outro = blunt ? 'Open this again next Sunday.' : 'Nice work planning ahead. See you next Sunday.';
+  return { intro, blocks, outro };
+}
+
+function planText(p) {
+  const out = [p.intro, ''];
+  p.blocks.forEach(b => { out.push(b.h); b.lines.forEach(l => out.push('- ' + l)); out.push(''); });
+  out.push(p.outro);
+  return out.join('\n');
+}
+
+let lastPlan = '';
+
+function showPlan() {
+  const p = buildPlan();
+  lastPlan = planText(p);
+  const box = $('plan-out');
+  box.textContent = '';
+  box.appendChild(el('p', 'lead', p.intro));
+  p.blocks.forEach(b => {
+    box.appendChild(el('h3', null, b.h));
+    const ul = el('ul');
+    b.lines.forEach(l => ul.appendChild(el('li', null, l)));
+    box.appendChild(ul);
+  });
+  box.appendChild(el('p', 'outro', p.outro));
+  box.hidden = false;
+  $('plan-tools').hidden = false;
+  $('copy-flash').textContent = '';
+}
+
+async function copyPlan() {
+  const flash = $('copy-flash');
+  try {
+    await navigator.clipboard.writeText(lastPlan);
+    flash.textContent = 'Copied.';
+  } catch (e) {
+    const ta = el('textarea');
+    ta.value = lastPlan;
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    ta.remove();
+    flash.textContent = ok ? 'Copied.' : 'Copy did not work here. Select the plan and copy it by hand.';
+  }
+}
+
+/* ---------- Math course sheet (read live when online) ---------- */
+
+const MATH = 'MATH 1267';
+const SHEET_ID = '1ZNvghKpYX571ga_KQxiuFbBQWPIQYW-_dOMlUlSD-a4';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/edit';
+const SYNC_KEY = 'life-crm-math';
+const TERM_YEAR = 2026;
+const MATH_HOUR = 13; // class starts at 1:00 pm
+const MONTH_NUM = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+const DATE_RE = /^(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*,?\s+([a-z]+)\.?\s+(\d{1,2})$/i;
+
+let mathCache = null;
+try { mathCache = JSON.parse(localStorage.getItem(SYNC_KEY)); } catch (e) { mathCache = null; }
+let syncState = 'loading';
+
+// Google blocks plain requests from a double-clicked file, so this uses the
+// script-tag form of Google's own sheet API. It only reads the public sheet.
+function readSheet(name) {
+  return new Promise((resolve, reject) => {
+    const cb = '__sheet_' + Math.random().toString(36).slice(2);
+    const tag = document.createElement('script');
+    const timer = setTimeout(() => { done(); reject(new Error('timeout')); }, 10000);
+    function done() { clearTimeout(timer); delete window[cb]; tag.remove(); }
+    window[cb] = data => {
+      done();
+      if (!data || data.status !== 'ok' || !data.table) { reject(new Error('bad response')); return; }
+      resolve(data.table.rows.map(r => (r.c || []).map(c => c == null ? '' : String(c.f != null ? c.f : (c.v != null ? c.v : '')).trim())));
+    };
+    tag.onerror = () => { done(); reject(new Error('network')); };
+    tag.src = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?headers=0'
+      + '&tqx=' + encodeURIComponent('out:json;responseHandler:' + cb)
+      + '&sheet=' + encodeURIComponent(name) + '&t=' + Date.now();
+    document.head.appendChild(tag);
+  });
+}
+
+const cell = (r, i) => (i >= 0 && r[i] != null ? String(r[i]).trim() : '');
+const label = t => t.toLowerCase().replace(/\s+/g, ' ');
+
+function parseCalendar(rows) {
+  let planCol = -1, testCol = -1, hwcCol = -1, dateCol = -1;
+  rows.forEach(r => r.forEach((v, i) => {
+    if (v === 'Class Plan') planCol = i;
+    if (v === 'Quiz & Exam Sections' || (v === 'Assessments' && testCol < 0)) testCol = i;
+    if (v === 'Homework Check Sections') hwcCol = i;
+  }));
+  for (const r of rows) {
+    const i = r.findIndex(v => DATE_RE.test(v));
+    if (i >= 0) { dateCol = i; break; }
+  }
+  if (planCol < 0 || dateCol < 0) throw new Error('calendar layout changed');
+
+  // Which sections each quiz, exam, and homework check covers.
+  const covers = {};
+  let curTest = null, curHwc = null;
+  const events = [];
+  rows.forEach(r => {
+    const m = DATE_RE.exec(cell(r, dateCol));
+    const t = cell(r, testCol), h = cell(r, hwcCol);
+    if (/^(quiz|exam)\s*\d+$/i.test(t)) { curTest = label(t); covers[curTest] = []; }
+    else if (t && curTest && m) covers[curTest].push(t);
+    if (/^hwc\s*\d+$/i.test(h)) { curHwc = label(h); covers[curHwc] = []; }
+    else if (h && curHwc && m) covers[curHwc].push(h);
+    if (!m) return;
+    const month = MONTH_NUM[m[1].slice(0, 3).toLowerCase()];
+    if (!month) return;
+    const re = /\b(quiz|hwc|exam)\s*(\d+)\b/gi;
+    let x;
+    while ((x = re.exec(cell(r, planCol)))) {
+      const kind = x[1].toLowerCase();
+      events.push({
+        key: kind + ' ' + x[2],
+        title: (kind === 'hwc' ? 'Homework Check ' : kind === 'quiz' ? 'Quiz ' : 'Exam ') + x[2],
+        type: kind === 'exam' ? 'exam' : 'quiz',
+        due: [TERM_YEAR, month, Number(m[2]), MATH_HOUR, 0],
+      });
+    }
+  });
+  events.forEach(ev => {
+    const base = ev.key.startsWith('hwc') ? MATH_HWC : ev.key.startsWith('quiz') ? MATH_QUIZ : 'In class, room 10-222. Bring a scientific calculator.';
+    const sec = covers[ev.key] && covers[ev.key].length ? 'Covers ' + covers[ev.key].join(', ') + '. ' : '';
+    ev.notes = sec + base;
+    delete ev.key;
+  });
+  return events;
+}
+
+function parseHomework(rows) {
+  const hi = rows.findIndex(r => r.includes('Section') && r.some(v => /^homework/i.test(v)));
+  if (hi < 0) throw new Error('homework layout changed');
+  const head = rows[hi].map(v => v.toLowerCase());
+  const sec = head.indexOf('section'), top = head.indexOf('topics');
+  const hw = head.findIndex(v => v.startsWith('homework')), ex = head.findIndex(v => v.startsWith('suggested'));
+  return rows.slice(hi + 1)
+    .map(r => ({ section: cell(r, sec), topic: cell(r, top), problems: cell(r, hw), examples: cell(r, ex) }))
+    .filter(x => /^\d+\.\d+$/.test(x.section) && x.problems);
+}
+
+const baseTitle = t => t.replace(/ \(date tentative\)$/, '');
+
+// Put the sheet's dates into the planner. Done marks stay; deleted items stay deleted.
+function applyMath(data) {
+  if (!data || !Array.isArray(data.events)) return;
+  const now = new Date();
+  const gone = new Set(state.deleted.map(baseTitle));
+  data.events.forEach(ev => {
+    if (gone.has(MATH + '|' + ev.title)) return;
+    const it = state.items.find(i => i.course === MATH && baseTitle(i.title) === ev.title);
+    if (it) {
+      Object.assign(it, { title: ev.title, type: ev.type, due: ev.due, notes: ev.notes });
+    } else if (due(ev) >= now) {
+      state.items.push({ id: 'm-' + ev.title.toLowerCase().replace(/\W+/g, '-'), course: MATH, title: ev.title,
+        type: ev.type, due: ev.due, notes: ev.notes, done: false, synced: true });
+    }
+  });
+  save();
+}
+
+async function syncMath() {
+  try {
+    const [cal, hw] = await Promise.all([readSheet('Course Calendar'), readSheet('HW & Course Content')]);
+    mathCache = { at: Date.now(), events: parseCalendar(cal), homework: parseHomework(hw) };
+    try { localStorage.setItem(SYNC_KEY, JSON.stringify(mathCache)); } catch (e) { /* page still works */ }
+    syncState = 'ok';
+    applyMath(mathCache);
+  } catch (e) {
+    syncState = 'offline';
+  }
+  render();
+}
+
+function stamp(ts, now) {
+  const d = new Date(ts);
+  return (dayDiff(d, now) === 0 ? 'today' : MONTHS[d.getMonth()] + ' ' + d.getDate()) + ' at ' + fmtTime(d);
+}
+
+function renderMath(now, order) {
+  const line = $('math-sync');
+  line.textContent = '';
+  let msg;
+  if (syncState === 'ok') msg = 'Updated from the course sheet ' + stamp(mathCache.at, now) + '. ';
+  else if (syncState === 'loading') msg = 'Checking the course sheet. ';
+  else if (mathCache) msg = "Couldn't reach the course sheet. Showing the copy from " + stamp(mathCache.at, now) + '. ';
+  else msg = "Couldn't reach the course sheet. Connect to the internet and reopen this page. ";
+  line.appendChild(document.createTextNode(msg));
+  const a = el('a', null, 'Open the sheet');
+  a.href = SHEET_URL;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  line.appendChild(a);
+
+  const box = $('math-hw');
+  box.textContent = '';
+  const list = ((mathCache && mathCache.homework) || []).slice().reverse(); // newest section first
+  const color = colorFor(MATH, order);
+  const make = items => {
+    const ul = el('ul', 'hw');
+    items.forEach(x => {
+      const li = el('li');
+      li.style.setProperty('--c', color);
+      li.appendChild(el('p', 'title', x.section + ' ' + x.topic));
+      li.appendChild(el('p', null, 'Problems: ' + x.problems));
+      if (x.examples && x.examples.toLowerCase() !== 'none') li.appendChild(el('p', 'examples', 'Examples to review: ' + x.examples));
+      ul.appendChild(li);
+    });
+    return ul;
+  };
+  if (!list.length) return;
+  box.appendChild(make(list.slice(0, 3)));
+  if (list.length > 3) {
+    const more = el('details', 'more');
+    more.appendChild(el('summary', null, 'Earlier sections (' + (list.length - 3) + ')'));
+    more.appendChild(make(list.slice(3)));
+    box.appendChild(more);
+  }
+}
+
+/* ---------- To-do, weekly goals, training ---------- */
+
+const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const fromYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const mondayOf = d => addDays(startOfDay(d), -((d.getDay() + 6) % 7));
+
+state.todos = state.todos || [];
+state.goals = state.goals || { week: '', counts: {} };
+state.training = state.training || { raceDate: '', done: {} };
+if (!state.training.raceDate) state.training.raceDate = '2026-11-08'; // Dale's race: Sunday, Nov 8
+
+function quietBtn(text, act, data, aria) {
+  const b = el('button', 'quiet', text);
+  b.type = 'button';
+  b.dataset.act = act;
+  Object.assign(b.dataset, data);
+  if (aria) b.setAttribute('aria-label', aria);
+  return b;
+}
+
+// A personal row: same look as a due-date row, with the accent bar.
+function personalRow(title, meta, when, buttons, done) {
+  const li = el('li', 'item' + (done ? ' done' : '') + (when ? '' : ' wide'));
+  li.style.setProperty('--c', 'var(--accent)');
+  li.appendChild(el('span', 'bar'));
+  li.appendChild(el('p', 'title', title));
+  if (when) li.appendChild(el('p', 'when', when));
+  li.appendChild(el('p', 'meta', meta));
+  const actions = el('div', 'actions');
+  buttons.forEach(b => actions.appendChild(b));
+  li.appendChild(actions);
+  return li;
+}
+
+// Weekly networking goals. Counts reset every Monday.
+const GOALS = [
+  { id: 'connect', label: 'Connect with relevant people', target: 5, short: 'connections', plan: 'Connect with 5 relevant people',
+    step: n => 'connect with ' + n + (n === 1 ? ' person' : ' people') },
+  { id: 'coffee', label: 'Message people for a coffee chat', target: 2, short: 'coffee-chat messages', plan: 'Message 2 people for a coffee chat',
+    step: n => 'message ' + n + (n === 1 ? ' person' : ' people') + ' for a coffee chat' },
+  { id: 'apply', label: 'Apply to internships', target: 3, short: 'applications', plan: 'Apply to 3 internships',
+    step: n => 'apply to ' + n + (n === 1 ? ' internship' : ' internships') },
+];
+
+function currentGoals(now) {
+  const g = state.goals;
+  const week = ymd(mondayOf(now));
+  if (g.week !== week) {
+    if (g.week) g.last = { week: g.week, counts: g.counts };
+    g.week = week;
+    g.counts = {};
+    save();
+  }
+  return g;
+}
+
+// Spread each goal across the week: by today you should be at
+// round(target * days so far / 7). Today's step is the gap to that pace.
+function networkingToday(now) {
+  const g = currentGoals(now);
+  const daysIn = ((now.getDay() + 6) % 7) + 1; // Monday 1 ... Sunday 7
+  const steps = GOALS.map(x => {
+    const need = Math.round(x.target * daysIn / 7) - (g.counts[x.id] || 0);
+    return need > 0 ? x.step(need) : null;
+  }).filter(Boolean);
+  if (GOALS.every(x => (g.counts[x.id] || 0) >= x.target)) return 'Networking goals done for this week.';
+  if (!steps.length) return 'Networking: on pace. Nothing needed today.';
+  const text = steps.join(', ');
+  return text.charAt(0).toUpperCase() + text.slice(1) + '.';
+}
+
+function renderGoals(now) {
+  const g = currentGoals(now);
+  const mon = mondayOf(now), sun = addDays(mon, 6);
+  $('goals-range').textContent = MONTHS[mon.getMonth()] + ' ' + mon.getDate() + ' to ' + MONTHS[sun.getMonth()] + ' ' + sun.getDate() + '. Resets Monday.';
+  const ul = $('goals');
+  ul.textContent = '';
+  GOALS.forEach(x => {
+    const n = g.counts[x.id] || 0;
+    const li = el('li', 'goal' + (n >= x.target ? ' met' : ''));
+    li.appendChild(el('p', 'label', x.label));
+    li.appendChild(el('p', 'count', n + ' of ' + x.target));
+    const acts = el('div', 'goal-acts');
+    acts.appendChild(quietBtn('−1', 'goal-dec', { goal: x.id }, 'Remove one: ' + x.label));
+    acts.appendChild(quietBtn('+1', 'goal-inc', { goal: x.id }, 'Add one: ' + x.label));
+    li.appendChild(acts);
+    ul.appendChild(li);
+  });
+  const last = $('goals-last');
+  last.hidden = !g.last;
+  if (g.last) last.textContent = 'Last week: ' + GOALS.map(x => (g.last.counts[x.id] || 0) + ' of ' + x.target + ' ' + x.short).join(', ') + '.';
+}
+
+// Training: running block until the race, a short taper and recovery,
+// then lifting Monday, Wednesday, Friday.
+const RUN_WEEK = {
+  1: 'Easy run, 30 to 40 min.',
+  2: 'Intervals: 10 min easy, 6 × 2 min hard with 2 min easy jogs, 10 min easy.',
+  3: 'Easy run, 30 min, then 15 min core and mobility.',
+  4: 'Tempo: 10 min easy, 20 min comfortably hard, 10 min easy.',
+  5: 'Rest.',
+  6: 'Long run, 50 to 70 min at an easy pace.',
+  0: 'Rest, or a 20 min easy jog.',
+};
+const LIFT_A = 'Lift A: squat 3×8, bench press 3×8, dumbbell row 3×10, plank 3 × 30 sec.';
+const LIFT_B = 'Lift B: Romanian deadlift 3×8, overhead press 3×8, lat pulldown 3×10, lunges 3×10 each leg.';
+const LIFT_WEEK = { 2: 'Easy run, 20 to 30 min, or rest.', 4: 'Rest.', 6: 'Easy run or hike, 30 to 45 min.', 0: 'Rest.' };
+const isRest = t => t.startsWith('Rest') || t.startsWith('Recovery');
+const LIFT_DAYS = [1, 3, 5]; // Monday, Wednesday, Friday
+
+// First Monday, Wednesday, or Friday at least 4 days after the race.
+function firstLiftDay(race) {
+  let d = addDays(race, 4);
+  while (!LIFT_DAYS.includes(d.getDay())) d = addDays(d, 1);
+  return d;
+}
+
+function workoutFor(day) {
+  const wd = day.getDay();
+  const r = state.training.raceDate;
+  if (r) {
+    const race = fromYmd(r);
+    const diff = dayDiff(day, race); // days after the race (negative = before)
+    if (diff === 0) return { text: 'Race day. Warm up 10 min easy, then race.' };
+    if (diff === -1) return { text: 'Rest. Lay out your gear and sleep early.' };
+    if (diff === -2) return { text: 'Easy run, 15 to 20 min, plus 4 short strides.' };
+    if (diff >= -6 && diff <= -3) return { text: wd === 5 ? 'Rest.' : 'Easy run, 20 to 30 min. Race week: keep it easy.' };
+    if (diff >= 1 && diff <= 3) return { text: 'Recovery. Rest or an easy 20 min walk.' };
+    if (diff >= 4) {
+      if (!LIFT_DAYS.includes(wd)) return { text: LIFT_WEEK[wd] };
+      // Alternate A and B, starting with A on the first lift day.
+      let k = 0;
+      for (let d = firstLiftDay(race); d < startOfDay(day); d = addDays(d, 1)) if (LIFT_DAYS.includes(d.getDay())) k++;
+      return { text: k % 2 === 0 ? LIFT_A : LIFT_B };
+    }
+  }
+  return { text: RUN_WEEK[wd] };
+}
+
+function trainingPhase(now) {
+  const r = state.training.raceDate;
+  if (!r) return 'Running block. Set your race date and lifting starts a few days after it.';
+  const race = fromYmd(r);
+  const diff = dayDiff(now, race);
+  const raceText = DAYS[race.getDay()] + ', ' + MONTHS[race.getMonth()] + ' ' + race.getDate();
+  if (diff < -6) return 'Running block until your race on ' + raceText + '.';
+  if (diff < 0) return 'Race week. Race on ' + raceText + '. Keep every run easy.';
+  if (diff === 0) return 'Race day. Go get it.';
+  if (diff <= 3) return 'Recovery after your race. Lifting starts ' + inSentence(firstLiftDay(race), now) + '.';
+  return 'Strength block: lift Monday, Wednesday, Friday. Start light, and add 5 lb when every set feels solid.';
+}
+
+function renderTraining(now) {
+  $('train-phase').textContent = trainingPhase(now);
+  const input = $('race-date');
+  if (document.activeElement !== input) input.value = state.training.raceDate || '';
+  const ul = $('train-week');
+  ul.textContent = '';
+  const mon = mondayOf(now);
+  let planned = 0, done = 0;
+  for (let n = 0; n < 7; n++) {
+    const day = addDays(mon, n);
+    const key = ymd(day);
+    const w = workoutFor(day);
+    const rest = isRest(w.text);
+    const isDone = !!state.training.done[key];
+    if (!rest) { planned++; if (isDone) done++; }
+    const btns = !rest && day <= now
+      ? [quietBtn(isDone ? 'Undo' : 'Done', 'workout-toggle', { date: key }, (isDone ? 'Mark not done: ' : 'Mark done: ') + w.text)]
+      : [];
+    const when = dayDiff(day, now) === 0 ? 'Today' : DAYS[day.getDay()].slice(0, 3);
+    ul.appendChild(personalRow(w.text, rest ? 'Rest day' : 'Workout', when, btns, isDone));
+  }
+  $('train-count').textContent = done + ' of ' + planned + ' workouts done this week.';
+}
+
+function renderTodo(now) {
+  const today = ymd(now), tomorrow = ymd(addDays(now, 1));
+  const groups = { Today: [], Tomorrow: [], Later: [] };
+
+  const w = workoutFor(startOfDay(now));
+  const wDone = !!state.training.done[today];
+  groups.Today.push(personalRow(w.text, isRest(w.text) ? 'Rest day' : 'Workout', '',
+    isRest(w.text) ? [] : [quietBtn(wDone ? 'Undo' : 'Done', 'workout-toggle', { date: today }, 'Mark workout done')], wDone));
+  groups.Today.push(personalRow(networkingToday(now), 'Networking · log it under Goals this week', '', [], false));
+  const wt = workoutFor(addDays(startOfDay(now), 1));
+  groups.Tomorrow.push(personalRow(wt.text, isRest(wt.text) ? 'Rest day' : 'Workout', '', [], false));
+
+  const todos = state.todos
+    .filter(t => !t.done || t.doneOn === today) // finished on an earlier day: hide
+    .sort((a, b) => (a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : a.id < b.id ? -1 : 1);
+  todos.forEach(t => {
+    const btns = [
+      quietBtn(t.done ? 'Undo' : 'Done', 'todo-toggle', { id: t.id }, (t.done ? 'Mark not done: ' : 'Mark done: ') + t.text),
+      quietBtn('Delete', 'todo-delete', { id: t.id }, 'Delete: ' + t.text),
+    ];
+    if (t.date && t.date <= today) {
+      const meta = t.date < today ? 'To-do · carried over from ' + shortDay(fromYmd(t.date), now) : 'To-do';
+      groups.Today.push(personalRow(t.text, meta, '', btns, t.done));
+    } else if (t.date === tomorrow) {
+      groups.Tomorrow.push(personalRow(t.text, 'To-do', '', btns, t.done));
+    } else {
+      groups.Later.push(personalRow(t.text, 'To-do', t.date ? shortDay(fromYmd(t.date), now) : 'Someday', btns, t.done));
+    }
+  });
+
+  const box = $('todo');
+  box.textContent = '';
+  Object.keys(groups).forEach(name => {
+    if (name === 'Later' && !groups.Later.length) return;
+    const wrap = el('div', 'day');
+    wrap.appendChild(el('h3', null, name));
+    const ul = el('ul', 'items');
+    groups[name].forEach(li => ul.appendChild(li));
+    wrap.appendChild(ul);
+    box.appendChild(wrap);
+  });
+}
+
+function handlePersonal(b) {
+  const act = b.dataset.act;
+  if (act === 'todo-toggle') {
+    const t = state.todos.find(x => x.id === b.dataset.id);
+    if (t) { t.done = !t.done; t.doneOn = t.done ? ymd(new Date()) : null; }
+  } else if (act === 'todo-delete') {
+    if (confirm('Delete this to-do?')) state.todos = state.todos.filter(x => x.id !== b.dataset.id);
+  } else if (act === 'workout-toggle') {
+    const k = b.dataset.date;
+    if (state.training.done[k]) delete state.training.done[k];
+    else state.training.done[k] = true;
+  } else if (act === 'goal-inc' || act === 'goal-dec') {
+    const g = currentGoals(new Date());
+    const n = (g.counts[b.dataset.goal] || 0) + (act === 'goal-inc' ? 1 : -1);
+    g.counts[b.dataset.goal] = Math.max(0, n);
+  } else {
+    return false;
+  }
+  return true;
+}
+
+$('todo-form').elements.when.addEventListener('change', e => {
+  $('todo-date-wrap').hidden = e.target.value !== 'date';
+});
+
+$('todo-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const form = e.target;
+  const text = form.elements.text.value.trim();
+  if (!text) return;
+  const now = new Date();
+  const when = form.elements.when.value;
+  let date = '';
+  if (when === 'today') date = ymd(now);
+  else if (when === 'tomorrow') date = ymd(addDays(now, 1));
+  else if (when === 'date') date = form.elements.date.value || ymd(now);
+  state.todos.push({ id: 't' + Date.now(), text, date, done: false, doneOn: null });
+  save();
+  render();
+  form.reset();
+  $('todo-date-wrap').hidden = true;
+  form.elements.text.focus();
+});
+
+$('race-date').addEventListener('change', e => {
+  state.training.raceDate = e.target.value;
+  save();
+  render();
+});
+
+/* ---------- Events ---------- */
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-act]');
+  if (!b) return;
+  if (handlePersonal(b)) { save(); render(); return; }
+  const it = state.items.find(i => i.id === b.dataset.id);
+  if (!it) return;
+  if (b.dataset.act === 'toggle') {
+    it.done = !it.done;
+  } else if (b.dataset.act === 'delete') {
+    if (!confirm('Delete this item?')) return;
+    state.items = state.items.filter(i => i !== it);
+    if (!it.added) state.deleted.push(keyOf(it));
+  }
+  save();
+  render();
+});
+
+$('plan-btn').addEventListener('click', showPlan);
+$('copy-btn').addEventListener('click', copyPlan);
+
+$('add-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const form = e.target;
+  const f = new FormData(form);
+  let course = String(f.get('course')).trim();
+  const title = String(f.get('title')).trim();
+  const date = String(f.get('date'));
+  const time = String(f.get('time') || '23:59');
+  if (!course || !title || !date) return;
+  const match = courseOrder().find(c => c.toLowerCase() === course.toLowerCase());
+  if (match) course = match;
+  const [y, m, d] = date.split('-').map(Number);
+  const [h, mi] = time.split(':').map(Number);
+  state.items.push({
+    id: 'a' + Date.now(), course, title, type: String(f.get('type')),
+    due: [y, m, d, h || 0, mi || 0], notes: '', done: false, added: true,
+  });
+  save();
+  render();
+  form.reset();
+  form.elements.time.value = '23:59';
+  $('add-flash').textContent = 'Added ' + course + ' ' + title + '.';
+});
+
+$('reset').addEventListener('click', () => {
+  if (!confirm('Reset due dates to the starting data? Your to-dos, goals, and training stay.')) return;
+  state = { seedVersion: SEED_VERSION, items: seedItems([]), deleted: [], todos: state.todos, goals: state.goals, training: state.training };
+  applyMath(mathCache);
+  save();
+  render();
+  $('plan-out').hidden = true;
+  $('plan-tools').hidden = true;
+});
+
+applyMath(mathCache);
+render();
+syncMath();
+setInterval(render, 60000);
+</script>
+</body>
+</html>
