@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Dale's classes and due dates, with a 72-hour flag and a one-button weekly plan.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Dale's classes, calendar, to-dos, goals, and training in one place.">
 <title>What's due</title>
-<meta name="theme-color" content="#F7F4EE">
+<meta name="theme-color" content="#111214">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="What's due">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script>
@@ -22,247 +22,315 @@
   }
 </script>
 <style>
+/* Direction: matches Dale's resume site.
+   Fonts:  Apple's system font (San Francisco), no download
+   Colors: #111214 ground, #17181B panels, #EDEDE8 ink, #8E918F muted, #2A2C2E rule;
+           class colors are the only color; #F2994A flags what's urgent
+   Sizes:  titles 1.75rem at 600, headings 1.125rem, body 1rem, labels 0.8125rem
+   Layout: top bar with the DK monogram, tabs at the bottom on a phone and on top on a laptop
+   Signature: the DK monogram draws itself on open; an orange now-line runs across the calendar */
 :root {
-  --display: ui-serif, "Iowan Old Style", "Sitka Text", Cambria, Georgia, serif;
-  --body: system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --ground: #F7F4EE; --surface: #FFFFFF; --ink: #1E1D1B; --muted: #65615B; --rule: #E2DDD3;
-  --accent: #2F5D50; --flag: #B4441F; --flag-bg: #FBEDE6;
-  --c1: #2F6B9A; --c2: #A2513B; --c3: #4F7A4A; --c4: #7B5A99; --c5: #9A6F12; --c6: #3E7C7B;
+  color-scheme: dark;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  --ground: #111214; --surface: #17181B; --raised: #1E1F23;
+  --ink: #EDEDE8; --muted: #8E918F; --rule: #2A2C2E;
+  --flag: #F2994A; --flag-bg: #2B2016;
+  --c1: #7FB2E5; --c2: #E59A82; --c3: #9CCB8F; --c4: #C3A5E8; --c5: #E6C170; --c6: #86C9C7;
+  --scrim: rgba(0, 0, 0, 0.6);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --top: 3.5rem; --tabs: 4rem; --hour: 52px;
+  --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
 }
 *, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; background: var(--ground); color: var(--ink); font: 400 1rem/1.5 var(--body); -webkit-text-size-adjust: 100%; }
-.wrap { width: min(100% - 2rem, 44rem); margin-inline: auto; padding-block: 1.5rem 4rem; }
-button, input, select, textarea { font: inherit; font-size: 1rem; }
-button { min-height: 44px; }
-.quiet { background: none; border: 0; padding: 0 0.5rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 400 1rem/1.5 var(--font); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+body:has(dialog[open]) { overflow: hidden; }
+button, input, select, textarea { font: inherit; font-size: 1rem; color: inherit; }
+button { min-height: 44px; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 [hidden] { display: none !important; }
+h1, h2, h3 { font-family: var(--display); margin: 0; letter-spacing: -0.01em; }
+p { margin: 0; }
+.wrap { width: min(100% - 2rem, 44rem); margin-inline: auto; }
+.muted { color: var(--muted); }
+.hint { color: var(--muted); font-size: 0.8125rem; }
+.empty { color: var(--muted); }
 
-h1, h2, h3 { font-family: var(--display); font-weight: 400; margin: 0; }
-h1 { font-size: 1.75rem; line-height: 1.15; }
-h2 { font-size: 1.375rem; line-height: 1.2; }
-h3 { font-size: 1.125rem; line-height: 1.3; }
+/* Buttons */
+.quiet { background: none; border: 0; padding: 0 0.5rem; color: var(--muted); text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 4px; }
+.quiet:hover { color: var(--ink); text-decoration-color: var(--ink); }
+.primary { background: var(--ink); color: var(--ground); border: 0; border-radius: 8px; padding: 0.5rem 1.25rem; font-weight: 600; }
+.primary:hover { opacity: 0.9; }
+.outline { background: none; border: 1px solid var(--rule); border-radius: 8px; padding: 0.375rem 0.875rem; color: var(--ink); font-weight: 500; }
+.outline:hover { border-color: var(--muted); }
+.sq { width: 44px; padding: 0; font-variant-numeric: tabular-nums; }
+.flush { margin-left: -0.5rem; }
 
-/* Header and course key */
-.top { padding-bottom: 1rem; border-bottom: 1px solid var(--rule); }
-.sub { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.875rem; }
-.key { list-style: none; margin: 0.75rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.375rem 1.25rem; font-size: 0.875rem; color: var(--muted); }
-.key li { display: flex; align-items: center; gap: 0.5rem; }
-.key li::before { content: ""; width: 4px; height: 1rem; border-radius: 2px; background: var(--c); }
+/* Top bar */
+.top { position: sticky; top: 0; z-index: 30; background: var(--ground); border-bottom: 1px solid var(--rule); padding-top: var(--safe-t); }
+.top-in { width: min(100% - 2rem, 80rem); margin-inline: auto; height: var(--top); display: flex; align-items: center; gap: 0.875rem; }
+.logo { display: block; padding: 0; background: none; border: 0; color: var(--ink); }
+.logo svg { display: block; height: 1.375rem; width: auto; overflow: visible; }
+.logo path { fill: var(--ink); stroke: var(--ink); stroke-width: 0; stroke-linejoin: round; }
+.top h1 { font-size: 1.125rem; font-weight: 600; }
+.top-actions { margin-left: auto; display: flex; align-items: center; gap: 0.25rem; }
+.tabs-top, .add-top { display: none; }
 
-section { margin-top: 2.5rem; }
+/* Tabs at the bottom, and the add button */
+.tabs { position: fixed; inset: auto 0 0 0; z-index: 30; display: grid; grid-template-columns: repeat(5, 1fr); background: var(--ground); border-top: 1px solid var(--rule); padding-bottom: var(--safe-b); }
+.tabs button { position: relative; height: var(--tabs); background: none; border: 0; color: var(--muted); font-size: 0.8125rem; font-weight: 500; }
+.tabs button[aria-current="page"] { color: var(--ink); font-weight: 600; }
+.tabs button[aria-current="page"]::before { content: ""; position: absolute; top: -1px; left: 28%; right: 28%; height: 2px; background: var(--ink); }
+.fab { position: fixed; right: 1rem; bottom: calc(var(--tabs) + var(--safe-b) + 1rem); z-index: 31; width: 3.5rem; height: 3.5rem; border: 0; border-radius: 8px; background: var(--ink); color: var(--ground); font-size: 1.75rem; font-weight: 300; line-height: 1; }
+main { padding-bottom: calc(var(--tabs) + var(--safe-b) + 6rem); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabs) + var(--safe-b) + 5.5rem); z-index: 40; max-width: calc(100% - 2rem); padding: 0.5rem 0.875rem; background: var(--raised); border: 1px solid var(--rule); border-radius: 8px; font-size: 0.875rem; }
 
-/* The 72-hour block */
-.soon { margin-top: 1.5rem; }
-.soon.loud { background: var(--flag-bg); border-left: 4px solid var(--flag); border-radius: 0 8px 8px 0; padding: 1rem 1rem 0.25rem; }
-.soon.loud .item:last-child { border-bottom: 0; }
-.soon.calm p { margin: 0; color: var(--muted); }
+/* Views and sections */
+.view { padding-top: 1.5rem; }
+.hello { padding-bottom: 1.25rem; }
+.hello h2 { font-size: 1.75rem; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
+.hello p { margin-top: 0.25rem; color: var(--muted); }
+.sec { padding-block: 1.25rem; border-top: 1px solid var(--rule); }
+#class-list > .sec:first-child, #goals-list > .sec:first-child { border-top: 0; padding-top: 0; }
+.sec-head { display: flex; align-items: center; gap: 0.75rem; min-height: 2rem; margin-bottom: 0.5rem; }
+.sec-head h2 { font-size: 1.125rem; font-weight: 600; }
+.aside { margin-left: auto; color: var(--muted); font-size: 0.8125rem; white-space: nowrap; }
+.sub-h { margin: 1rem 0 0.25rem; color: var(--muted); font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.step-line { font-size: 1.0625rem; font-weight: 600; }
+.tip { margin-top: 0.75rem; color: var(--muted); font-size: 0.8125rem; }
 
-/* Item rows */
-.day { margin-top: 1.5rem; }
-.day:first-of-type { margin-top: 0.5rem; }
-.items { list-style: none; margin: 0.25rem 0 0; padding: 0; }
-.item {
-  display: grid;
-  grid-template-columns: 4px minmax(0, 1fr) auto;
-  grid-template-areas: "bar title when" "bar left left" "bar meta actions" "bar note note";
-  column-gap: 0.75rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--rule);
-}
-.item .bar { grid-area: bar; background: var(--c); border-radius: 2px; }
-.item .title { grid-area: title; margin: 0; font-weight: 600; overflow-wrap: anywhere; }
-.item .when { grid-area: when; margin: 0; padding-top: 0.125rem; font-size: 0.875rem; color: var(--muted); text-align: right; white-space: nowrap; }
-.item .meta { grid-area: meta; margin: 0; align-self: center; font-size: 0.875rem; color: var(--muted); }
-.item .left { grid-area: left; margin: 0.125rem 0 0; font-size: 0.875rem; font-weight: 600; color: var(--flag); }
-.item .note { grid-area: note; margin: 0 0 0.25rem; font-size: 0.875rem; color: var(--muted); }
-.item .actions { grid-area: actions; display: flex; justify-content: flex-end; margin-right: -0.5rem; }
-.item.done .title { font-weight: 400; color: var(--muted); text-decoration: line-through; }
-.item.done .bar { opacity: 0.35; }
-.item.wide .title { grid-column: 2 / 4; }
-.empty { margin: 0.5rem 0 0; color: var(--muted); }
+/* Rows */
+.rows { list-style: none; margin: 0; padding: 0; }
+.row { display: grid; grid-template-columns: 3px minmax(0, 1fr) auto; column-gap: 0.75rem; align-items: center; padding: 0.25rem 0; border-bottom: 1px solid var(--rule); }
+.row:last-child { border-bottom: 0; }
+.row .bar { align-self: stretch; margin-block: 0.375rem; border-radius: 2px; background: var(--c, var(--ink)); }
+.row .main { display: block; width: 100%; min-width: 0; min-height: 44px; padding: 0.375rem 0; background: none; border: 0; text-align: left; }
+.row .t { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.row .m { display: block; margin-top: 0.0625rem; color: var(--muted); font-size: 0.8125rem; overflow-wrap: anywhere; }
+.row .left { display: block; color: var(--flag); font-size: 0.8125rem; font-weight: 600; }
+.row .r { color: var(--muted); font-size: 0.8125rem; text-align: right; white-space: nowrap; }
+.row.done .t { color: var(--muted); font-weight: 400; text-decoration: line-through; }
+.row.done .bar { opacity: 0.35; }
+.row.past .t { color: var(--muted); }
+.trow { grid-template-columns: 2rem minmax(0, 1fr) auto; }
+.arow { grid-template-columns: 4.25rem 3px minmax(0, 1fr); }
+.arow .time { color: var(--muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.check { display: grid; place-items: center; width: 44px; height: 44px; margin-left: -0.625rem; padding: 0; background: none; border: 0; }
+.check::before, .check::after { content: ""; grid-area: 1 / 1; }
+.check::before { width: 1.25rem; height: 1.25rem; border: 1.5px solid var(--muted); border-radius: 6px; }
+.check[aria-checked="true"]::before { background: var(--ink); border-color: var(--ink); }
+.check[aria-checked="true"]::after { width: 0.375rem; height: 0.6875rem; margin-top: -0.1875rem; border: solid var(--ground); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.nowrow { display: grid; grid-template-columns: 4.25rem 1fr; column-gap: 0.75rem; align-items: center; padding: 0.25rem 0; color: var(--flag); font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.nowrow::after { content: ""; height: 2px; border-radius: 1px; background: var(--flag); }
+.soon-box { padding: 0.125rem 1rem; background: var(--flag-bg); border-left: 3px solid var(--flag); border-radius: 0 8px 8px 0; }
+.soon-box .row { border-bottom-color: color-mix(in srgb, var(--flag) 18%, transparent); }
+details.more > summary { display: flex; align-items: center; min-height: 44px; list-style: none; cursor: pointer; color: var(--muted); font-size: 0.875rem; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 4px; }
+details.more > summary::-webkit-details-marker { display: none; }
+
+/* Today: moving and hiding sections */
+.card-ctl { display: flex; margin-left: auto; }
+.editing .sec { padding-inline: 0.75rem; margin-inline: -0.75rem; border: 1px dashed var(--rule); border-radius: 8px; margin-bottom: 0.5rem; }
+.editing .sec-head .aside { display: none; }
+
+/* Goals */
+.goal { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 0.75rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--rule); }
+.goal:last-child { border-bottom: 0; }
+.goal .label { font-weight: 600; }
+.goal .count { color: var(--muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.goal.met .label { color: var(--muted); text-decoration: line-through; }
+.pips { display: flex; gap: 4px; margin-top: 0.375rem; }
+.pips i { width: 0.75rem; height: 0.75rem; border: 1px solid var(--muted); border-radius: 2px; }
+.pips i.on { background: var(--ink); border-color: var(--ink); }
+.steps { display: flex; gap: 0.375rem; }
+.goal.compact { grid-template-columns: minmax(0, 1fr) auto 44px; }
+
+/* Classes */
+.class-head { display: grid; grid-template-columns: 3px minmax(0, 1fr) auto; column-gap: 0.75rem; align-items: center; margin-bottom: 0.5rem; }
+.class-head .bar { align-self: stretch; border-radius: 2px; background: var(--c); }
+.class-head h2 { font-size: 1.125rem; font-weight: 600; }
+.class-head p { color: var(--muted); font-size: 0.8125rem; }
+.sched { margin-bottom: 0.5rem; color: var(--muted); font-size: 0.875rem; }
 
 /* Plan */
-.primary { background: var(--accent); color: var(--surface); border: 0; border-radius: 8px; padding: 0.75rem 1.5rem; font-weight: 600; cursor: pointer; }
-.primary:hover { background: var(--ink); }
-.plan-out { margin-top: 1rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 1rem 1.25rem; }
-.plan-out h3 { margin-top: 1.25rem; }
-.plan-out p { margin: 0; }
+.plan-out { margin-top: 1rem; padding: 1rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; }
 .plan-out .lead { font-weight: 600; }
-.plan-out .outro { margin-top: 1.25rem; color: var(--muted); }
+.plan-out h3 { margin-top: 1rem; font-size: 1rem; font-weight: 600; }
 .plan-out ul { margin: 0.25rem 0 0; padding-left: 1.125rem; }
 .plan-out li { margin: 0.25rem 0; }
-.plan-tools { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; margin-left: -0.5rem; }
-.flash { font-size: 0.875rem; color: var(--muted); }
+.plan-out .outro { margin-top: 1rem; color: var(--muted); }
 
-/* To-do, weekly goals, training */
-.secondary { justify-self: start; background: none; border: 1px solid var(--accent); border-radius: 8px; padding: 0.5rem 1.25rem; color: var(--accent); font-weight: 600; cursor: pointer; }
-.secondary:hover { background: var(--surface); }
-.todo-form { display: grid; gap: 1rem; margin-top: 1rem; }
-.goals { list-style: none; margin: 0.5rem 0 0; padding: 0; }
-.goal { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; column-gap: 0.75rem; padding: 0.25rem 0; border-bottom: 1px solid var(--rule); }
-.goal p { margin: 0; }
-.goal .count { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.goal.met .label { color: var(--muted); text-decoration: line-through; }
-.goal-acts { display: flex; margin-right: -0.5rem; }
-.tip { margin: 0.75rem 0 0; font-size: 0.875rem; color: var(--muted); }
-.race { margin-top: 1rem; max-width: 14rem; }
+/* Forms */
+form.f { display: grid; gap: 0.875rem; margin-top: 1rem; }
+.fl { display: grid; gap: 0.375rem; color: var(--muted); font-size: 0.8125rem; }
+input, select, textarea { display: block; width: 100%; min-width: 0; min-height: 44px; padding: 0.5rem 0.75rem; border: 1px solid var(--rule); border-radius: 8px; background: var(--ground); color: var(--ink); }
+input[type="date"], input[type="time"] { -webkit-appearance: none; appearance: none; }
+input::-webkit-date-and-time-value { text-align: left; }
+input::placeholder { color: var(--muted); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.btns { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 1rem; }
+.qadd { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; margin-top: 0.75rem; }
+.moves { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.todo-form { margin: 0 0 0.5rem; }
 
-/* Math homework from the course sheet */
-.sync { margin: 0.25rem 0 0; font-size: 0.875rem; color: var(--muted); }
-.sync a { color: var(--accent); text-underline-offset: 3px; }
-.hw { list-style: none; margin: 0.5rem 0 0; padding: 0; }
-.hw li { display: grid; grid-template-columns: 4px minmax(0, 1fr); column-gap: 0.75rem; padding: 0.5rem 0; border-bottom: 1px solid var(--rule); }
-.hw li::before { content: ""; grid-row: 1 / span 3; background: var(--c); border-radius: 2px; }
-.hw p { grid-column: 2; margin: 0; overflow-wrap: anywhere; }
-.hw .title { font-weight: 600; }
-.hw .examples { font-size: 0.875rem; color: var(--muted); }
-details.more { margin-top: 0.25rem; border-top: 0; padding-top: 0; }
-details.more > summary { font: 400 0.875rem/1.5 var(--body); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
-details.more > summary::after { content: none; }
+/* Sheet */
+dialog.sheet { position: fixed; inset: auto 0 0 0; width: 100%; max-width: none; max-height: 88dvh; margin: 0; padding: 0; border: 0; border-top: 1px solid var(--rule); border-radius: 12px 12px 0 0; background: var(--raised); color: var(--ink); overflow: hidden; }
+dialog.sheet::backdrop { background: var(--scrim); }
+.sheet-in { position: relative; width: min(100%, 36rem); max-height: 88dvh; margin-inline: auto; overflow-y: auto; padding: 1.25rem 1rem calc(1.25rem + var(--safe-b)); }
+.sheet-in h2 { margin-right: 4.5rem; font-size: 1.25rem; font-weight: 600; line-height: 1.25; }
+.sheet-in > p { margin-top: 0.375rem; }
+.sheet-close { position: absolute; top: 0.625rem; right: 0.5rem; }
 
-/* Add and Past */
-details { margin-top: 2.5rem; border-top: 1px solid var(--rule); padding-top: 0.5rem; }
-summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; list-style: none; font: 400 1.375rem/1.2 var(--display); }
-summary::-webkit-details-marker { display: none; }
-summary::after { content: "+"; margin-left: auto; color: var(--muted); font-family: var(--body); }
-details[open] > summary::after { content: "\2013"; }
-form { display: grid; gap: 1rem; margin: 1rem 0 0.5rem; }
-label { display: grid; gap: 0.375rem; font-size: 0.875rem; color: var(--muted); }
-input, select { width: 100%; min-width: 0; min-height: 44px; padding: 0.5rem 0.75rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); color: var(--ink); }
-.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.form-end { display: flex; align-items: center; gap: 1rem; }
+/* Calendar */
+.cal-wrap { width: min(100% - 1rem, 80rem); margin-inline: auto; }
+.cal-nav { display: flex; align-items: center; gap: 0.375rem; padding: 0 0.5rem 0.75rem; }
+.cal-nav h2 { margin-right: auto; font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cal { --n: 3; --gut: 2.75rem; }
+.cal-head, .cal-allday, .cal-body { display: grid; grid-template-columns: var(--gut) repeat(var(--n), minmax(0, 1fr)); }
+.cal-head { position: sticky; top: calc(var(--top) + var(--safe-t) + 1px); z-index: 8; background: var(--ground); border-bottom: 1px solid var(--rule); }
+.dayhead { display: grid; justify-items: center; padding: 0.375rem 0 0.5rem; }
+.dayhead .dn { color: var(--muted); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.dayhead .dd { display: grid; place-items: center; width: 2rem; height: 2rem; margin-top: 0.125rem; border-radius: 50%; font-size: 1.125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.dayhead.today .dn { color: var(--ink); font-weight: 600; }
+.dayhead.today .dd { background: var(--ink); color: var(--ground); }
+.cal-allday { border-bottom: 1px solid var(--rule); }
+.gut-lab { padding: 0.375rem 0.375rem 0 0; color: var(--muted); font-size: 0.8125rem; text-align: right; }
+.adcell { display: grid; align-content: start; gap: 3px; min-width: 0; min-height: 2.25rem; padding: 3px 2px; border-left: 1px solid var(--rule); cursor: pointer; }
+.chip { display: block; width: 100%; min-width: 0; min-height: 0; padding: 0.1875rem 0.375rem; border: 0; border-left: 3px solid var(--c, var(--ink)); border-radius: 0 4px 4px 0; background: var(--surface); background: color-mix(in srgb, var(--c, var(--ink)) 16%, var(--ground)); color: var(--ink); font-size: 0.8125rem; line-height: 1.3; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip.todo { background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--ink); }
+.chip.urgent { font-weight: 600; }
+.chip.done { opacity: 0.45; text-decoration: line-through; }
+.hours { position: relative; height: calc(var(--hour) * 18); }
+.hours span { position: absolute; right: 0.375rem; transform: translateY(-50%); color: var(--muted); font-size: 0.8125rem; white-space: nowrap; }
+.col { position: relative; height: calc(var(--hour) * 18); border-left: 1px solid var(--rule); background-image: repeating-linear-gradient(to bottom, var(--rule) 0 1px, transparent 1px var(--hour)); cursor: pointer; }
+.col.today { background-color: color-mix(in srgb, var(--ink) 3%, transparent); }
+.blk { position: absolute; display: flex; flex-direction: column; min-height: 0; padding: 0.1875rem 0.375rem; overflow: hidden; border: 0; border-left: 3px solid var(--c); border-radius: 0 6px 6px 0; background: var(--surface); background: color-mix(in srgb, var(--c) 24%, var(--ground)); color: var(--ink); font-size: 0.8125rem; line-height: 1.25; text-align: left; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+.blk .bt { flex: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-weight: 600; overflow-wrap: anywhere; }
+.blk.one .bt { -webkit-line-clamp: 1; }
+.blk .bs { overflow: hidden; opacity: 0.8; white-space: nowrap; text-overflow: ellipsis; }
+.blk.short { flex-direction: row; align-items: center; gap: 0.375rem; padding-block: 0; }
+.blk.short .bt { display: block; flex: 0 1 auto; white-space: nowrap; text-overflow: ellipsis; }
+.blk.short .bs { display: none; }
+.blk.mine { --c: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--ink); }
+.blk.done { opacity: 0.45; }
+.blk.done .bt { text-decoration: line-through; }
+.blk[data-drag] { cursor: grab; }
+.blk.dragging { z-index: 20; cursor: grabbing; outline: 2px solid var(--ink); outline-offset: 1px; }
+.now { position: absolute; left: 0; right: 0; z-index: 6; height: 2px; margin-top: -1px; background: var(--flag); pointer-events: none; }
+.now::before { content: ""; position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--flag); }
+.cal-hint { padding: 0.75rem 0.5rem 0; }
 
-footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.875rem; color: var(--muted); }
-footer p { margin: 0; }
-footer .quiet { font-size: 0.875rem; margin-right: -0.5rem; }
-#storage-warn { flex-basis: 100%; color: var(--flag); }
+@media (min-width: 900px) {
+  .tabs, .fab { display: none; }
+  .top h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .tabs-top { display: flex; align-self: stretch; gap: 0.25rem; margin-left: 1.25rem; }
+  .tabs-top button { position: relative; padding: 0 0.75rem; background: none; border: 0; color: var(--muted); font-size: 0.9375rem; font-weight: 500; }
+  .tabs-top button:hover { color: var(--ink); }
+  .tabs-top button[aria-current="page"] { color: var(--ink); }
+  .tabs-top button[aria-current="page"]::after { content: ""; position: absolute; left: 0.75rem; right: 0.75rem; bottom: -1px; height: 2px; background: var(--ink); }
+  .add-top { display: inline-flex; align-items: center; }
+  main { padding-bottom: 4rem; }
+  .toast { bottom: 1.5rem; }
+  .cal { --n: 7; --gut: 3.5rem; }
+  .cal-wrap { width: min(100% - 2rem, 80rem); }
+  dialog.sheet { inset: 0; width: min(100% - 2rem, 32rem); height: fit-content; margin: auto; border: 1px solid var(--rule); border-radius: 12px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .logo path { fill: transparent; stroke-width: 1.2; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 0.8s var(--ease) forwards, fill-in 0.35s 0.7s ease forwards; }
+  .logo path + path { animation-delay: 0.15s, 0.85s; }
+  .view { animation: fade-up 0.3s var(--ease); }
+  dialog.sheet[open] { animation: sheet-up 0.25s var(--ease); }
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes fill-in { to { fill: var(--ink); stroke-width: 0; } }
+@keyframes fade-up { from { opacity: 0.4; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes sheet-up { from { opacity: 0; transform: translateY(1.5rem); } to { opacity: 1; transform: none; } }
 </style>
 </head>
 <body>
-<noscript><p class="wrap">This preview has scripts turned off. Open the file in Safari or Chrome.</p></noscript>
-<div class="wrap">
-  <header class="top">
-    <h1>What's due</h1>
-    <p class="sub" id="today"></p>
-    <ul class="key" id="key" aria-label="Course colors"></ul>
-  </header>
+<noscript><p class="wrap" style="padding:1.5rem 0">This preview has scripts turned off. Open the file in Safari or Chrome.</p></noscript>
 
-  <section class="soon" id="soon" aria-live="polite"></section>
+<header class="top">
+  <div class="top-in">
+    <button type="button" class="logo" data-act="tab" data-tab="today" aria-label="Go to Today">
+      <svg viewBox="0 0 64 40" aria-hidden="true">
+        <path pathLength="1" fill-rule="evenodd" d="M4 4H18A16 16 0 0 1 18 36H4Z M10 10H18A10 10 0 0 1 18 30H10Z"/>
+        <path pathLength="1" d="M38 4H44V17L54 4H61.5L49.8 19.6L61.5 36H54L44 22.8V36H38Z"/>
+      </svg>
+    </button>
+    <h1 id="page-title">Today</h1>
+    <nav class="tabs-top" aria-label="Sections">
+      <button type="button" data-act="tab" data-tab="today">Today</button>
+      <button type="button" data-act="tab" data-tab="calendar">Calendar</button>
+      <button type="button" data-act="tab" data-tab="todo">To-do</button>
+      <button type="button" data-act="tab" data-tab="classes">Classes</button>
+      <button type="button" data-act="tab" data-tab="goals">Goals</button>
+    </nav>
+    <div class="top-actions">
+      <button type="button" class="quiet" id="edit-btn" data-act="edit-today">Edit</button>
+      <button type="button" class="outline add-top" data-act="add">+ Add</button>
+    </div>
+  </div>
+</header>
 
-  <section aria-labelledby="todo-h">
-    <h2 id="todo-h">To-do</h2>
-    <div id="todo"></div>
-    <form id="todo-form" class="todo-form" autocomplete="off">
-      <label>New to-do
+<main>
+  <section class="view wrap" id="view-today">
+    <div class="hello"><h2 id="hello-day"></h2><p id="hello-sub"></p></div>
+    <div id="cards"></div>
+  </section>
+
+  <section class="view cal-wrap" id="view-calendar" hidden>
+    <div class="cal-nav">
+      <h2 id="cal-range"></h2>
+      <button type="button" class="outline" data-act="cal-today">Today</button>
+      <button type="button" class="outline sq" data-act="cal-prev" aria-label="Earlier days">&lsaquo;</button>
+      <button type="button" class="outline sq" data-act="cal-next" aria-label="Later days">&rsaquo;</button>
+    </div>
+    <div class="cal" id="cal"></div>
+    <p class="hint cal-hint" id="cal-hint"></p>
+  </section>
+
+  <section class="view wrap" id="view-todo" hidden>
+    <form id="todo-form" class="f todo-form" autocomplete="off">
+      <label class="fl">New to-do
         <input name="text" required>
       </label>
       <div class="pair">
-        <label>When
+        <label class="fl">When
           <select name="when">
             <option value="today">Today</option>
             <option value="tomorrow">Tomorrow</option>
-            <option value="date">Pick a date</option>
+            <option value="date">Pick a day</option>
             <option value="someday">Someday</option>
           </select>
         </label>
-        <label id="todo-date-wrap" hidden>Date
+        <label class="fl" id="todo-date-wrap" hidden>Day
           <input type="date" name="date">
         </label>
       </div>
-      <button type="submit" class="secondary">Add to-do</button>
+      <div><button type="submit" class="outline">Add to-do</button></div>
     </form>
+    <div id="todo-list"></div>
   </section>
 
-  <section aria-labelledby="goals-h">
-    <h2 id="goals-h">Goals this week</h2>
-    <p class="sub" id="goals-range"></p>
-    <ul class="goals" id="goals"></ul>
-    <p class="tip">Start with Cal Poly alumni and people you've met in person. They're much more likely to respond.</p>
-    <p class="tip" id="goals-last" hidden></p>
-  </section>
+  <section class="view wrap" id="view-classes" hidden><div id="class-list"></div></section>
+  <section class="view wrap" id="view-goals" hidden><div id="goals-list"></div></section>
 
-  <section aria-labelledby="week-h">
-    <h2 id="week-h">This week</h2>
-    <div id="week"></div>
-  </section>
+  <p class="wrap hint" id="storage-warn" hidden>This browser is not saving changes. Open the page in Safari or Chrome.</p>
+</main>
 
-  <section aria-labelledby="later-h">
-    <h2 id="later-h">Later</h2>
-    <div id="later"></div>
-  </section>
+<button type="button" class="fab" data-act="add" aria-label="Add">+</button>
+<nav class="tabs" aria-label="Sections">
+  <button type="button" data-act="tab" data-tab="today">Today</button>
+  <button type="button" data-act="tab" data-tab="calendar">Calendar</button>
+  <button type="button" data-act="tab" data-tab="todo">To-do</button>
+  <button type="button" data-act="tab" data-tab="classes">Classes</button>
+  <button type="button" data-act="tab" data-tab="goals">Goals</button>
+</nav>
 
-  <section aria-labelledby="train-h">
-    <h2 id="train-h">Training</h2>
-    <p class="sub" id="train-phase"></p>
-    <div class="race">
-      <label>Race date
-        <input type="date" id="race-date">
-      </label>
-    </div>
-    <ul class="items" id="train-week"></ul>
-    <p class="tip" id="train-count"></p>
-  </section>
-
-  <section aria-labelledby="math-h">
-    <h2 id="math-h">Math homework</h2>
-    <p class="sync" id="math-sync"></p>
-    <div id="math-hw"></div>
-  </section>
-
-  <section>
-    <button type="button" class="primary" id="plan-btn">Plan my Sunday</button>
-    <div class="plan-out" id="plan-out" hidden></div>
-    <div class="plan-tools" id="plan-tools" hidden>
-      <button type="button" class="quiet" id="copy-btn">Copy plan</button>
-      <span class="flash" id="copy-flash" aria-live="polite"></span>
-    </div>
-  </section>
-
-  <details id="add">
-    <summary>Add an item</summary>
-    <form id="add-form" autocomplete="off">
-      <label>Course
-        <input name="course" list="courses" required placeholder="BUS 346">
-      </label>
-      <datalist id="courses"></datalist>
-      <label>Title
-        <input name="title" required placeholder="Discussion #6">
-      </label>
-      <label>Type
-        <select name="type">
-          <option value="assignment">Assignment</option>
-          <option value="quiz">Quiz</option>
-          <option value="exam">Exam</option>
-          <option value="project">Project</option>
-        </select>
-      </label>
-      <div class="pair">
-        <label>Due date
-          <input type="date" name="date" required>
-        </label>
-        <label>Time
-          <input type="time" name="time" value="23:59">
-        </label>
-      </div>
-      <div class="form-end">
-        <button type="submit" class="primary">Add</button>
-        <span class="flash" id="add-flash" aria-live="polite"></span>
-      </div>
-    </form>
-  </details>
-
-  <details id="past-box" hidden>
-    <summary id="past-sum">Past</summary>
-    <ul class="items" id="past"></ul>
-  </details>
-
-  <footer>
-    <p>Saved in this browser only.</p>
-    <button type="button" class="quiet" id="reset">Reset to starting data</button>
-    <p id="storage-warn" hidden>This browser is not saving changes. Open the file in Safari or Chrome.</p>
-  </footer>
-</div>
+<dialog class="sheet" id="sheet" aria-labelledby="sheet-title"><div class="sheet-in" id="sheet-body"></div></dialog>
+<p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
 
 <script>
 const STORE_KEY = 'life-crm';
@@ -348,37 +416,115 @@ const SEED = [
 const TYPES = { assignment: 'Assignment', quiz: 'Quiz', exam: 'Exam', project: 'Project' };
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const HOUR = 3600000;
 const GRACE = 48 * HOUR; // a missed item stays flagged this long, then moves to Past
+const MATH = 'MATH 1267';
 
-// Exams and in-class quizzes happen once; they can't be turned in late.
-const inPerson = it => it.type === 'exam' || it.course === 'MATH 1267' || /\bin class\b/i.test(it.notes || '');
+/* ---------- Class meetings (shown as blocks on the calendar) ---------- */
 
-// Missed, but recent enough to still matter.
-function stillOverdue(it, now) {
-  const d = due(it);
-  return !it.done && !inPerson(it) && d < now && now - d < GRACE;
-}
+const TERM_START = new Date(2026, 7, 24);
+const TERM_END = new Date(2026, 11, 11);
+const NO_CLASS = new Set(['2026-09-07', '2026-11-11', '2026-11-23', '2026-11-24', '2026-11-25', '2026-11-26', '2026-11-27']);
+const CLASSES = [
+  { course: 'BIO 222', name: 'Biodiversity of California', days: [1, 3], start: '09:00', end: '10:30', room: 'Room 08-123' },
+  { course: 'BUS 2215', name: 'Managerial Accounting', days: [2, 4], start: '10:30', end: '11:50', room: 'BUS 003-305' },
+  { course: 'BUS 3391', name: 'Information Systems', days: [], note: 'Class times not added yet. Tell Claude the days and times.' },
+  { course: MATH, name: 'Business Calculus', days: [1, 3, 5], start: '13:00', end: '13:50', room: 'Erhart Agriculture 10-222' },
+  { course: 'BUS 346', name: 'Principles of Marketing', days: [], note: 'Mon and Wed at 4:30 pm. End time and due dates not added yet: paste the Canvas Course Summary to Claude.' },
+];
+
+/* ---------- Small helpers ---------- */
 
 const $ = id => document.getElementById(id);
-const keyOf = it => it.course + '|' + it.title;
-const inClass = it => it.due[3] == null;
-// "In class" items count from 8:00 am, so the warning comes early rather than late.
-const due = it => new Date(it.due[0], it.due[1] - 1, it.due[2], inClass(it) ? 8 : it.due[3], it.due[4]);
-const timeText = it => inClass(it) ? 'in class' : fmtTime(due(it));
-const atTime = it => inClass(it) ? ', in class' : ' at ' + fmtTime(due(it));
-const byDue = (a, b) => due(a) - due(b);
-
 function el(tag, cls, text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
   if (text != null) n.textContent = text;
   return n;
 }
+function btn(text, cls, data, aria) {
+  const b = el('button', cls, text);
+  b.type = 'button';
+  if (data) Object.keys(data).forEach(k => { if (data[k] != null) b.dataset[k] = data[k]; });
+  if (aria) b.setAttribute('aria-label', aria);
+  return b;
+}
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const keyOf = it => it.course + '|' + it.title;
+const inClass = it => it.due[3] == null;
+// "In class" items count from 8:00 am, so the warning comes early rather than late.
+const due = it => new Date(it.due[0], it.due[1] - 1, it.due[2], inClass(it) ? 8 : it.due[3], it.due[4]);
+const byDue = (a, b) => due(a) - due(b);
+const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const dayDiff = (d, now) => Math.round((startOfDay(d) - startOfDay(now)) / 86400000);
+const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const fromYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const mondayOf = d => addDays(startOfDay(d), -((d.getDay() + 6) % 7));
+const toMin = s => { const [h, m] = s.split(':').map(Number); return h * 60 + (m || 0); };
+const fromMin = n => String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
+const minOf = d => d.getHours() * 60 + d.getMinutes();
+
+function clock(min, mer = true) {
+  const h = Math.floor(min / 60) % 24, m = min % 60;
+  return (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (mer ? (h < 12 ? ' am' : ' pm') : '');
+}
+function shortTime(min) {
+  const h = Math.floor(min / 60) % 24, m = min % 60;
+  return (h % 12 || 12) + (m ? ':' + String(m).padStart(2, '0') : '') + (h < 12 ? 'am' : 'pm');
+}
+function rangeText(start, dur) {
+  const end = start + dur;
+  return (start < 720) === (end < 720) ? clock(start, false) + '–' + clock(end) : clock(start) + '–' + clock(end);
+}
+const fmtTime = d => clock(minOf(d));
+
+function dayLabel(d, now) {
+  const diff = dayDiff(d, now);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  return DAYS[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate();
+}
+function shortDay(d, now) {
+  const diff = dayDiff(d, now);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  if (diff > 1 && diff < 7) return DAYS[d.getDay()].slice(0, 3);
+  return MONTHS[d.getMonth()] + ' ' + d.getDate();
+}
+function inSentence(d, now) {
+  const label = dayLabel(d, now);
+  return label === 'Today' || label === 'Tomorrow' || label === 'Yesterday' ? label.toLowerCase() : 'on ' + label;
+}
+function timeLeft(d, now) {
+  const ms = Math.abs(d - now);
+  const mins = Math.round(ms / 60000), hrs = Math.round(ms / HOUR);
+  let s;
+  if (mins < 60) s = mins + (mins === 1 ? ' minute' : ' minutes');
+  else if (hrs < 48) s = hrs + (hrs === 1 ? ' hour' : ' hours');
+  else {
+    const days = Math.floor(hrs / 24), rest = hrs % 24;
+    s = days + ' days' + (rest ? ' ' + rest + (rest === 1 ? ' hour' : ' hours') : '');
+  }
+  return d < now ? 'overdue by ' + s : 'due in ' + s;
+}
+const timeText = it => inClass(it) ? 'in class' : fmtTime(due(it));
+const atTime = it => inClass(it) ? ', in class' : ' at ' + fmtTime(due(it));
+
+// Exams and in-class quizzes happen once; they can't be turned in late.
+const inPerson = it => it.type === 'exam' || it.course === MATH || /\bin class\b/i.test(it.notes || '');
+function stillOverdue(it, now) {
+  const d = due(it);
+  return !it.done && !inPerson(it) && d < now && now - d < GRACE;
+}
 
 /* ---------- Storage ---------- */
 
 let storageOk = true;
+const CARRY = ['todos', 'goals', 'training', 'overrides', 'layout'];
 
 function seedItems(deleted) {
   const skip = new Set(deleted);
@@ -398,7 +544,7 @@ function load() {
   // keep done marks, keep items added by hand, and skip seed items deleted by hand.
   const deleted = (stored && stored.deleted) || [];
   const fresh = { seedVersion: SEED_VERSION, items: seedItems(deleted), deleted };
-  if (stored) ['todos', 'goals', 'training'].forEach(k => { if (stored[k]) fresh[k] = stored[k]; });
+  if (stored) CARRY.forEach(k => { if (stored[k]) fresh[k] = stored[k]; });
   if (stored && Array.isArray(stored.items)) {
     const doneKeys = new Set(stored.items.filter(i => i.done).map(keyOf));
     fresh.items.forEach(i => { if (doneKeys.has(keyOf(i))) i.done = true; });
@@ -411,188 +557,843 @@ function load() {
 function save() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); storageOk = true; }
   catch (e) { storageOk = false; }
-  $('storage-warn').hidden = storageOk;
+  const w = $('storage-warn');
+  if (w) w.hidden = storageOk;
 }
+
+const CARD_IDS = ['soon', 'schedule', 'todo', 'workout', 'network', 'plan'];
+const CARD_NAMES = { soon: 'Due soon', schedule: "Today's schedule", todo: 'To-do today', workout: 'Workout', network: 'Networking', plan: 'Plan my week' };
 
 let state = load();
+state.todos = state.todos || [];
+state.goals = state.goals || { week: '', counts: {} };
+state.training = state.training || { raceDate: '', done: {} };
+state.training.done = state.training.done || {};
+if (!state.training.raceDate) state.training.raceDate = '2026-11-08'; // Dale's race: Sunday, Nov 8
+state.overrides = state.overrides || {};
+state.layout = state.layout || { order: CARD_IDS.slice(), hidden: [] };
+state.layout.order = (state.layout.order || []).filter(id => CARD_IDS.includes(id));
+CARD_IDS.forEach(id => { if (!state.layout.order.includes(id)) state.layout.order.push(id); });
+state.layout.hidden = (state.layout.hidden || []).filter(id => CARD_IDS.includes(id));
 save();
-
-/* ---------- Dates ---------- */
-
-function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
-function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
-function dayDiff(d, now) { return Math.round((startOfDay(d) - startOfDay(now)) / 86400000); }
-
-function fmtTime(d) {
-  const h = d.getHours(), m = d.getMinutes();
-  return (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? ' am' : ' pm');
-}
-
-function dayLabel(d, now) {
-  const diff = dayDiff(d, now);
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Tomorrow';
-  return DAYS[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate();
-}
-
-function shortDay(d, now) {
-  const diff = dayDiff(d, now);
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Tomorrow';
-  if (diff === -1) return 'Yesterday';
-  if (diff > 1 && diff < 7) return DAYS[d.getDay()].slice(0, 3);
-  return MONTHS[d.getMonth()] + ' ' + d.getDate();
-}
-
-function inSentence(d, now) {
-  const label = dayLabel(d, now);
-  return label === 'Today' || label === 'Tomorrow' ? label.toLowerCase() : 'on ' + label;
-}
-
-function timeLeft(d, now) {
-  const ms = Math.abs(d - now);
-  const mins = Math.round(ms / 60000);
-  const hrs = Math.round(ms / HOUR);
-  let s;
-  if (mins < 60) s = mins + (mins === 1 ? ' minute' : ' minutes');
-  else if (hrs < 48) s = hrs + (hrs === 1 ? ' hour' : ' hours');
-  else {
-    const days = Math.floor(hrs / 24), rest = hrs % 24;
-    s = days + ' days' + (rest ? ' ' + rest + (rest === 1 ? ' hour' : ' hours') : '');
-  }
-  return d < now ? 'overdue by ' + s : 'due in ' + s;
-}
 
 /* ---------- Courses ---------- */
 
 function courseOrder() {
   const seen = [];
-  SEED.forEach(s => { if (!seen.includes(s[0])) seen.push(s[0]); });
-  state.items.forEach(i => { if (!seen.includes(i.course)) seen.push(i.course); });
+  const add = c => { if (!seen.includes(c)) seen.push(c); };
+  SEED.forEach(s => add(s[0]));
+  state.items.forEach(i => add(i.course));
+  CLASSES.forEach(c => add(c.course));
   return seen;
 }
+const colorFor = course => 'var(--c' + ((courseOrder().indexOf(course) % 6) + 1) + ')';
 
-function colorFor(course, order) {
-  return 'var(--c' + ((order.indexOf(course) % 6) + 1) + ')';
+/* ---------- Weekly goals ---------- */
+
+const GOALS = [
+  { id: 'connect', label: 'Connect with relevant people', short: 'connections', target: 5, plan: 'Connect with 5 relevant people',
+    step: n => 'connect with ' + n + (n === 1 ? ' person' : ' people') },
+  { id: 'coffee', label: 'Message people for a coffee chat', short: 'coffee-chat messages', target: 2, plan: 'Message 2 people for a coffee chat',
+    step: n => 'message ' + n + (n === 1 ? ' person' : ' people') + ' for a coffee chat' },
+  { id: 'apply', label: 'Apply to internships', short: 'applications', target: 3, plan: 'Apply to 3 internships',
+    step: n => 'apply to ' + n + (n === 1 ? ' internship' : ' internships') },
+];
+
+function currentGoals(now) {
+  const g = state.goals;
+  const week = ymd(mondayOf(now));
+  if (g.week !== week) {
+    if (g.week) g.last = { week: g.week, counts: g.counts };
+    g.week = week;
+    g.counts = {};
+    save();
+  }
+  return g;
 }
 
-/* ---------- Rendering ---------- */
+// Spread each goal across the week: by today you should be at
+// round(target * days so far / 7). Today's step is the gap to that pace.
+function networkingToday(now) {
+  const g = currentGoals(now);
+  const daysIn = ((now.getDay() + 6) % 7) + 1;
+  if (GOALS.every(x => (g.counts[x.id] || 0) >= x.target)) return 'Networking goals done for this week.';
+  const steps = GOALS.map(x => {
+    const need = Math.round(x.target * daysIn / 7) - (g.counts[x.id] || 0);
+    return need > 0 ? x.step(need) : null;
+  }).filter(Boolean);
+  if (!steps.length) return 'On pace. Nothing needed today.';
+  return cap(steps.join(', ')) + '.';
+}
 
-function row(it, mode, now, order) {
-  const d = due(it);
-  const li = el('li', 'item' + (it.done ? ' done' : ''));
-  li.style.setProperty('--c', colorFor(it.course, order));
-  li.appendChild(el('span', 'bar'));
-  li.appendChild(el('p', 'title', it.title));
-  const t = timeText(it);
-  li.appendChild(el('p', 'when', mode === 'day' ? t.charAt(0).toUpperCase() + t.slice(1) : shortDay(d, now) + (inClass(it) ? ', ' : ' ') + t));
+/* ---------- Training ---------- */
 
-  if (mode === 'soon') {
-    const left = timeLeft(d, now);
-    li.appendChild(el('p', 'left', left.charAt(0).toUpperCase() + left.slice(1)));
+const RUN_WEEK = {
+  1: 'Easy run, 30 to 40 min.',
+  2: 'Intervals: 10 min easy, 6 × 2 min hard with 2 min easy jogs, 10 min easy.',
+  3: 'Easy run, 30 min, then 15 min core and mobility.',
+  4: 'Tempo: 10 min easy, 20 min comfortably hard, 10 min easy.',
+  5: 'Rest.',
+  6: 'Long run, 50 to 70 min at an easy pace.',
+  0: 'Rest, or a 20 min easy jog.',
+};
+const LIFT_A = 'Lift A: squat 3×8, bench press 3×8, dumbbell row 3×10, plank 3 × 30 sec.';
+const LIFT_B = 'Lift B: Romanian deadlift 3×8, overhead press 3×8, lat pulldown 3×10, lunges 3×10 each leg.';
+const LIFT_WEEK = { 2: 'Easy run, 20 to 30 min, or rest.', 4: 'Rest.', 6: 'Easy run or hike, 30 to 45 min.', 0: 'Rest.' };
+const LIFT_DAYS = [1, 3, 5];
+const isRest = t => t.startsWith('Rest') || t.startsWith('Recovery');
+
+function firstLiftDay(race) {
+  let d = addDays(race, 4);
+  while (!LIFT_DAYS.includes(d.getDay())) d = addDays(d, 1);
+  return d;
+}
+
+function workoutFor(day) {
+  const wd = day.getDay();
+  const r = state.training.raceDate;
+  if (r) {
+    const race = fromYmd(r);
+    const diff = dayDiff(day, race);
+    if (diff === 0) return { text: 'Race day. Warm up 10 min easy, then race.' };
+    if (diff === -1) return { text: 'Rest. Lay out your gear and sleep early.' };
+    if (diff === -2) return { text: 'Easy run, 15 to 20 min, plus 4 short strides.' };
+    if (diff >= -6 && diff <= -3) return { text: wd === 5 ? 'Rest.' : 'Easy run, 20 to 30 min. Race week: keep it easy.' };
+    if (diff >= 1 && diff <= 3) return { text: 'Recovery. Rest or an easy 20 min walk.' };
+    if (diff >= 4) {
+      if (!LIFT_DAYS.includes(wd)) return { text: LIFT_WEEK[wd] };
+      let k = 0;
+      for (let d = firstLiftDay(race); d < startOfDay(day); d = addDays(d, 1)) if (LIFT_DAYS.includes(d.getDay())) k++;
+      return { text: k % 2 === 0 ? LIFT_A : LIFT_B };
+    }
   }
-  li.appendChild(el('p', 'meta', it.course + ' · ' + (TYPES[it.type] || 'Assignment')));
+  return { text: RUN_WEEK[wd] };
+}
 
-  const actions = el('div', 'actions');
-  const doneBtn = el('button', 'quiet', it.done ? 'Undo' : 'Done');
-  doneBtn.type = 'button';
-  doneBtn.dataset.act = 'toggle';
-  doneBtn.dataset.id = it.id;
-  doneBtn.setAttribute('aria-label', (it.done ? 'Mark not done: ' : 'Mark done: ') + it.course + ' ' + it.title);
-  const delBtn = el('button', 'quiet', 'Delete');
-  delBtn.type = 'button';
-  delBtn.dataset.act = 'delete';
-  delBtn.dataset.id = it.id;
-  delBtn.setAttribute('aria-label', 'Delete: ' + it.course + ' ' + it.title);
-  actions.append(doneBtn, delBtn);
-  li.appendChild(actions);
+function trainingPhase(now) {
+  const r = state.training.raceDate;
+  if (!r) return 'Running block. Set your race date and lifting starts a few days after it.';
+  const race = fromYmd(r);
+  const diff = dayDiff(now, race);
+  const raceText = DAYS[race.getDay()] + ', ' + MONTHS[race.getMonth()] + ' ' + race.getDate();
+  if (diff < -6) return 'Running block until your race on ' + raceText + '.';
+  if (diff < 0) return 'Race week. Race on ' + raceText + '. Keep every run easy.';
+  if (diff === 0) return 'Race day. Go get it.';
+  if (diff <= 3) return 'Recovery after your race. Lifting starts ' + inSentence(firstLiftDay(race), now) + '.';
+  return 'Strength block: lift Monday, Wednesday, Friday. Start light, and add 5 lb when every set feels solid.';
+}
 
-  if (it.notes) li.appendChild(el('p', 'note', it.notes));
+// How a workout sits on the calendar: a short title, a length, and a usual start.
+function workoutMeta(text) {
+  const title = text.split(/[:,.]/)[0].trim();
+  let dur = 45;
+  if (/long run/i.test(text)) dur = 75;
+  else if (/^lift/i.test(text)) dur = 60;
+  else if (/intervals|tempo|core/i.test(text)) dur = 50;
+  else if (/race day/i.test(text)) dur = 120;
+  else if (/15 to 20|20 to 30/.test(text)) dur = 30;
+  const start = /long run|hike|race day/i.test(text) ? 8 * 60 : 7 * 60;
+  return { title, dur, start };
+}
+
+/* ---------- Calendar blocks ---------- */
+
+function classesOn(day) {
+  if (day < TERM_START || day > TERM_END || NO_CLASS.has(ymd(day))) return [];
+  return CLASSES.filter(c => c.days.includes(day.getDay())).map(c => ({
+    kind: 'class', id: 'c:' + c.course + ':' + ymd(day), course: c.course, title: c.course, sub: c.room,
+    date: ymd(day), start: toMin(c.start), dur: toMin(c.end) - toMin(c.start), cls: c,
+  }));
+}
+
+// Workouts and the networking block. Each can be moved; the move is saved per day.
+function routineFor(day) {
+  const key = ymd(day);
+  const out = [];
+  const w = workoutFor(day);
+  if (!isRest(w.text)) {
+    const m = workoutMeta(w.text);
+    out.push({ kind: 'workout', id: 'w:' + key, origin: key, title: m.title, text: w.text, date: key,
+      start: m.start, defStart: m.start, dur: m.dur, done: !!state.training.done[key] });
+  }
+  if (day.getDay() >= 1 && day.getDay() <= 5) {
+    out.push({ kind: 'network', id: 'n:' + key, origin: key, title: 'Networking', date: key,
+      start: 19 * 60 + 30, defStart: 19 * 60 + 30, dur: 20, done: false });
+  }
+  out.forEach(b => {
+    const o = state.overrides[b.id];
+    if (o) { b.date = o.date; b.start = o.start; b.moved = true; }
+  });
+  return out;
+}
+
+function blocksIn(first, n) {
+  const firstKey = ymd(first), lastKey = ymd(addDays(first, n - 1));
+  const out = [];
+  for (let i = -7; i < n + 7; i++) routineFor(addDays(first, i)).forEach(b => out.push(b));
+  for (let i = 0; i < n; i++) classesOn(addDays(first, i)).forEach(b => out.push(b));
+  state.todos.forEach(t => {
+    if (t.time && t.date) out.push({ kind: 'todo', id: 't:' + t.id, todo: t, title: t.text, date: t.date,
+      start: toMin(t.time), dur: t.dur || 60, done: t.done });
+  });
+  return out.filter(b => b.date >= firstKey && b.date <= lastKey);
+}
+
+// Side-by-side columns for blocks that overlap.
+function layoutDay(blocks) {
+  blocks.sort((a, b) => a.start - b.start || b.dur - a.dur);
+  let cluster = [], end = -1;
+  const flush = () => {
+    const cols = [];
+    cluster.forEach(b => {
+      let i = cols.findIndex(e => e <= b.start);
+      if (i < 0) { i = cols.length; cols.push(0); }
+      cols[i] = b.start + Math.max(b.dur, 25);
+      b.col = i;
+    });
+    cluster.forEach(b => { b.cols = cols.length; });
+    cluster = [];
+  };
+  blocks.forEach(b => {
+    if (b.start >= end) { flush(); end = -1; }
+    cluster.push(b);
+    end = Math.max(end, b.start + Math.max(b.dur, 25));
+  });
+  flush();
+}
+
+function alldayFor(key, now) {
+  const dues = state.items.filter(i => ymd(due(i)) === key).sort(byDue).map(i => ({ kind: 'due', item: i }));
+  const todos = state.todos.filter(t => t.date === key && !t.time).map(t => ({ kind: 'todo', todo: t }));
+  return dues.concat(todos);
+}
+
+function soonItems(now) {
+  const limit = new Date(now.getTime() + 72 * HOUR);
+  return state.items.filter(it => (!it.done && due(it) > now && due(it) <= limit) || stillOverdue(it, now)).sort(byDue);
+}
+
+// Everything on one day, in time order, for the Today schedule.
+function agendaFor(day) {
+  const key = ymd(day);
+  const list = blocksIn(startOfDay(day), 1).map(b => Object.assign({ sortMin: b.start }, b));
+  state.items.filter(i => ymd(due(i)) === key).forEach(i => list.push({
+    kind: 'due', id: i.id, item: i, title: i.title, course: i.course,
+    start: inClass(i) ? null : minOf(due(i)), sortMin: inClass(i) ? 8 * 60 : minOf(due(i)), done: i.done,
+  }));
+  return list.sort((a, b) => a.sortMin - b.sortMin);
+}
+
+/* ---------- To-do helpers ---------- */
+
+function todoGroup(t, now) {
+  if (!t.date) return 'someday';
+  if (t.date <= ymd(now)) return 'today';
+  const diff = dayDiff(fromYmd(t.date), now);
+  if (diff === 1) return 'tomorrow';
+  if (diff <= 6) return 'week';
+  return 'later';
+}
+const showTodo = (t, now) => !t.done || t.doneOn === ymd(now); // finished on an earlier day: hide
+function todoSort(a, b) {
+  const da = a.date || '9999', db = b.date || '9999';
+  if (da !== db) return da < db ? -1 : 1;
+  const ta = a.time || '', tb = b.time || '';
+  if (ta !== tb) return ta < tb ? -1 : 1;
+  return a.id < b.id ? -1 : 1;
+}
+const todosFor = (group, now) => state.todos.filter(t => showTodo(t, now) && todoGroup(t, now) === group).sort(todoSort);
+
+/* ---------- Rows ---------- */
+
+function dueRow(it, now, opts = {}) {
+  const d = due(it);
+  const li = el('li', 'row' + (it.done ? ' done' : ''));
+  li.style.setProperty('--c', colorFor(it.course));
+  li.appendChild(el('span', 'bar'));
+  const main = btn('', 'main', { act: 'open', kind: 'due', id: it.id });
+  main.appendChild(el('span', 't', it.title));
+  main.appendChild(el('span', 'm', it.course + ' · ' + (TYPES[it.type] || 'Assignment')));
+  if (opts.left && !it.done) main.appendChild(el('span', 'left', cap(timeLeft(d, now))));
+  li.appendChild(main);
+  const when = inClass(it) ? 'in class' : fmtTime(d);
+  li.appendChild(el('span', 'r', opts.dayTime ? shortDay(d, now) + (inClass(it) ? ', ' : ' ') + when : cap(when)));
   return li;
 }
 
-function renderDays(list, mount, emptyText, now, order) {
-  mount.textContent = '';
-  if (!list.length) { mount.appendChild(el('p', 'empty', emptyText)); return; }
-  let current = null, ul = null;
-  list.forEach(it => {
-    const d = due(it);
-    const k = d.toDateString();
-    if (k !== current) {
-      current = k;
-      const box = el('div', 'day');
-      box.appendChild(el('h3', null, dayLabel(d, now)));
-      ul = el('ul', 'items');
-      box.appendChild(ul);
-      mount.appendChild(box);
+function todoRow(t, now) {
+  const li = el('li', 'row trow' + (t.done ? ' done' : ''));
+  const c = btn('', 'check', { act: 'todo-toggle', id: t.id }, (t.done ? 'Mark not done: ' : 'Mark done: ') + t.text);
+  c.setAttribute('role', 'checkbox');
+  c.setAttribute('aria-checked', String(!!t.done));
+  li.appendChild(c);
+  const main = btn('', 'main', { act: 'open', kind: 'todo', id: 't:' + t.id });
+  main.appendChild(el('span', 't', t.text));
+  const bits = [];
+  const today = ymd(now);
+  if (t.date && t.date < today) bits.push('From ' + shortDay(fromYmd(t.date), now));
+  else if (t.date && dayDiff(fromYmd(t.date), now) > 1) bits.push(dayLabel(fromYmd(t.date), now));
+  if (t.time) bits.push(rangeText(toMin(t.time), t.dur || 60));
+  if (bits.length) main.appendChild(el('span', 'm', bits.join(' · ')));
+  li.appendChild(main);
+  return li;
+}
+
+function agendaRow(x, now) {
+  const li = el('li', 'row arow' + (x.done ? ' done' : ''));
+  const mine = x.kind === 'workout' || x.kind === 'network' || x.kind === 'todo';
+  li.style.setProperty('--c', mine ? 'var(--ink)' : colorFor(x.course));
+  if (x.kind !== 'due' && x.start + (x.dur || 0) < minOf(now)) li.classList.add('past');
+  li.appendChild(el('span', 'time', x.start == null ? 'Class' : clock(x.start)));
+  li.appendChild(el('span', 'bar'));
+  const main = btn('', 'main', { act: 'open', kind: x.kind, id: x.id });
+  main.appendChild(el('span', 't', x.title));
+  let meta = '';
+  if (x.kind === 'class') meta = rangeText(x.start, x.dur) + ' · ' + x.sub;
+  else if (x.kind === 'workout') meta = x.text;
+  else if (x.kind === 'network') meta = networkingToday(now);
+  else if (x.kind === 'todo') meta = 'To-do · ' + rangeText(x.start, x.dur);
+  else meta = x.course + ' · ' + (TYPES[x.item.type] || 'Assignment') + ' due';
+  main.appendChild(el('span', 'm', meta));
+  li.appendChild(main);
+  return li;
+}
+
+function nowRow(now) {
+  const li = el('li', 'nowrow', clock(minOf(now)));
+  li.setAttribute('aria-label', 'Now, ' + clock(minOf(now)));
+  return li;
+}
+
+function quickAdd(placeholder) {
+  const f = el('form', 'qadd');
+  f.autocomplete = 'off';
+  const i = el('input');
+  i.name = 'text';
+  i.placeholder = placeholder;
+  i.setAttribute('aria-label', placeholder);
+  const b = el('button', 'outline', 'Add');
+  b.type = 'submit';
+  f.append(i, b);
+  f.addEventListener('submit', e => {
+    e.preventDefault();
+    const text = i.value.trim();
+    if (!text) return;
+    state.todos.push({ id: 't' + Date.now(), text, date: ymd(new Date()), done: false, doneOn: null });
+    save();
+    render();
+    toast('Added to today.');
+  });
+  return f;
+}
+
+/* ---------- Today ---------- */
+
+let editing = false, planOpen = false, lastPlan = '';
+
+const CARD_RENDER = {
+  soon(sec, head, now, soon) {
+    if (!soon.length) { sec.appendChild(el('p', 'empty', 'Nothing due in the next 72 hours.')); return; }
+    head.appendChild(el('span', 'aside', soon.length + (soon.length === 1 ? ' item' : ' items')));
+    const box = el('div', 'soon-box');
+    const ul = el('ul', 'rows');
+    soon.forEach(it => ul.appendChild(dueRow(it, now, { left: true, dayTime: true })));
+    box.appendChild(ul);
+    sec.appendChild(box);
+  },
+  schedule(sec, head, now) {
+    const list = agendaFor(now);
+    head.appendChild(btn('Calendar', 'quiet', { act: 'tab', tab: 'calendar' }));
+    if (!list.length) { sec.appendChild(el('p', 'empty', 'Nothing scheduled today.')); return; }
+    const ul = el('ul', 'rows');
+    let placed = false;
+    list.forEach(x => {
+      if (!placed && x.sortMin > minOf(now)) { ul.appendChild(nowRow(now)); placed = true; }
+      ul.appendChild(agendaRow(x, now));
+    });
+    if (!placed) ul.appendChild(nowRow(now));
+    sec.appendChild(ul);
+  },
+  todo(sec, head, now) {
+    const list = todosFor('today', now);
+    head.appendChild(el('span', 'aside', list.filter(t => !t.done).length + ' left'));
+    if (list.length) {
+      const ul = el('ul', 'rows');
+      list.forEach(t => ul.appendChild(todoRow(t, now)));
+      sec.appendChild(ul);
+    } else {
+      sec.appendChild(el('p', 'empty', 'Nothing on your list for today.'));
     }
-    ul.appendChild(row(it, 'day', now, order));
-  });
+    sec.appendChild(quickAdd('Add a to-do for today'));
+  },
+  workout(sec, head, now) {
+    const key = ymd(now);
+    const w = workoutFor(now);
+    const mon = mondayOf(now);
+    let planned = 0, done = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(mon, i);
+      if (!isRest(workoutFor(d).text)) { planned++; if (state.training.done[ymd(d)]) done++; }
+    }
+    head.appendChild(el('span', 'aside', done + ' of ' + planned + ' this week'));
+    if (isRest(w.text)) {
+      sec.appendChild(el('p', 'step-line', 'Rest day'));
+      sec.appendChild(el('p', 'muted', w.text));
+    } else {
+      const b = routineFor(now).find(x => x.kind === 'workout');
+      sec.appendChild(el('p', 'step-line', b.title));
+      sec.appendChild(el('p', 'muted', w.text));
+      sec.appendChild(el('p', 'hint', b.date === key ? clock(b.start) : 'Moved to ' + shortDay(fromYmd(b.date), now) + ' at ' + clock(b.start)));
+      const isDone = !!state.training.done[key];
+      const row = el('div', 'btns');
+      row.appendChild(btn(isDone ? 'Done. Undo?' : 'Mark done', isDone ? 'quiet' : 'outline', { act: 'workout-toggle', date: key }));
+      sec.appendChild(row);
+    }
+    sec.appendChild(btn('Training plan', 'quiet flush', { act: 'tab', tab: 'goals' }));
+  },
+  network(sec, head, now) {
+    const g = currentGoals(now);
+    head.appendChild(el('span', 'aside', 'Resets Monday'));
+    sec.appendChild(el('p', 'step-line', networkingToday(now)));
+    const box = el('div');
+    GOALS.forEach(x => {
+      const n = g.counts[x.id] || 0;
+      const row = el('div', 'goal compact' + (n >= x.target ? ' met' : ''));
+      row.appendChild(el('p', 'label', x.label));
+      row.appendChild(el('p', 'count', n + ' of ' + x.target));
+      row.appendChild(btn('+1', 'outline sq', { act: 'goal-inc', goal: x.id }, 'Add one: ' + x.label));
+      box.appendChild(row);
+    });
+    sec.appendChild(box);
+  },
+  plan(sec, head, now) {
+    const row = el('div', 'btns');
+    row.style.marginTop = '0';
+    row.appendChild(btn(planOpen ? 'Refresh plan' : 'Plan my week', 'primary', { act: 'plan' }));
+    if (planOpen) row.append(btn('Copy plan', 'quiet', { act: 'copy-plan' }), btn('Close', 'quiet', { act: 'plan-close' }));
+    sec.appendChild(row);
+    if (!planOpen) { sec.appendChild(el('p', 'tip', 'Writes out the next 7 days: deadlines, workouts, to-dos, and your networking goal.')); return; }
+    const p = buildPlan();
+    lastPlan = planText(p);
+    const out = el('div', 'plan-out');
+    out.appendChild(el('p', 'lead', p.intro));
+    p.blocks.forEach(bl => {
+      out.appendChild(el('h3', null, bl.h));
+      const ul = el('ul');
+      bl.lines.forEach(l => ul.appendChild(el('li', null, l)));
+      out.appendChild(ul);
+    });
+    out.appendChild(el('p', 'outro', p.outro));
+    sec.appendChild(out);
+  },
+};
+
+function moveCard(id, dir) {
+  const order = state.layout.order;
+  const visible = order.filter(x => !state.layout.hidden.includes(x));
+  const i = visible.indexOf(id), j = i + dir;
+  if (i < 0 || j < 0 || j >= visible.length) return;
+  const a = order.indexOf(visible[i]), b = order.indexOf(visible[j]);
+  [order[a], order[b]] = [order[b], order[a]];
 }
 
-function render() {
-  const now = new Date();
-  const order = courseOrder();
-  const in72 = new Date(now.getTime() + 72 * HOUR);
-  const in7 = new Date(now.getTime() + 7 * 24 * HOUR);
-
-  // Every item lands in exactly one place.
-  const soon = [], week = [], later = [], past = [];
-  [...state.items].sort(byDue).forEach(it => {
-    const d = due(it);
-    if (d < now) (stillOverdue(it, now) ? soon : past).push(it);
-    else if (!it.done && d <= in72) soon.push(it);
-    else if (d <= in7) week.push(it);
-    else later.push(it);
+function renderToday(now) {
+  const soon = soonItems(now);
+  const left = state.todos.filter(t => !t.done && t.date && t.date <= ymd(now)).length;
+  $('hello-day').textContent = DAYS[now.getDay()];
+  $('hello-sub').textContent = MONTHS_LONG[now.getMonth()] + ' ' + now.getDate() + ' · '
+    + (soon.length ? soon.length + ' due in the next 72 hours' : 'nothing due in the next 72 hours')
+    + ' · ' + left + (left === 1 ? ' to-do' : ' to-dos') + ' today';
+  const box = $('cards');
+  box.textContent = '';
+  box.classList.toggle('editing', editing);
+  const visible = state.layout.order.filter(id => !state.layout.hidden.includes(id));
+  if (editing) box.appendChild(el('p', 'hint', 'Move sections up or down, or hide the ones you don’t need. Tap Done at the top when you’re finished.'));
+  visible.forEach((id, i) => {
+    const sec = el('section', 'sec');
+    const head = el('div', 'sec-head');
+    head.appendChild(el('h2', null, CARD_NAMES[id]));
+    sec.appendChild(head);
+    if (editing) {
+      const ctl = el('div', 'card-ctl');
+      if (i > 0) ctl.appendChild(btn('Up', 'quiet', { act: 'card-up', card: id }, 'Move ' + CARD_NAMES[id] + ' up'));
+      if (i < visible.length - 1) ctl.appendChild(btn('Down', 'quiet', { act: 'card-down', card: id }, 'Move ' + CARD_NAMES[id] + ' down'));
+      ctl.appendChild(btn('Hide', 'quiet', { act: 'card-hide', card: id }, 'Hide ' + CARD_NAMES[id]));
+      head.appendChild(ctl);
+    }
+    CARD_RENDER[id](sec, head, now, soon);
+    if (editing) sec.querySelectorAll('.sec-head > .quiet, .sec-head > .aside').forEach(b => b.remove());
+    box.appendChild(sec);
   });
-
-  const open = state.items.filter(i => !i.done).length;
-  $('today').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-    + ' · ' + open + ' open';
-
-  const key = $('key');
-  key.textContent = '';
-  const used = order.filter(c => state.items.some(i => i.course === c));
-  used.forEach(c => {
-    const li = el('li', null, c);
-    li.style.setProperty('--c', colorFor(c, order));
-    key.appendChild(li);
-  });
-
-  const soonBox = $('soon');
-  soonBox.textContent = '';
-  if (soon.length) {
-    soonBox.className = 'soon loud';
-    soonBox.appendChild(el('h2', null, 'Due in the next 72 hours'));
-    const ul = el('ul', 'items');
-    soon.forEach(it => ul.appendChild(row(it, 'soon', now, order)));
-    soonBox.appendChild(ul);
-  } else {
-    soonBox.className = 'soon calm';
-    soonBox.appendChild(el('p', null, 'Nothing due in the next 72 hours.'));
+  if (editing && state.layout.hidden.length) {
+    const sec = el('section', 'sec');
+    const head = el('div', 'sec-head');
+    head.appendChild(el('h2', null, 'Hidden'));
+    sec.appendChild(head);
+    const ul = el('ul', 'rows');
+    state.layout.hidden.forEach(id => {
+      const li = el('li', 'row');
+      li.appendChild(el('span', 'bar'));
+      li.appendChild(el('span', 't', CARD_NAMES[id]));
+      li.appendChild(btn('Show', 'quiet', { act: 'card-show', card: id }, 'Show ' + CARD_NAMES[id]));
+      ul.appendChild(li);
+    });
+    sec.appendChild(ul);
+    box.appendChild(sec);
   }
-
-  renderDays(week, $('week'), 'Nothing else due this week.', now, order);
-  renderDays(later, $('later'), 'Nothing scheduled after this week.', now, order);
-
-  const pastBox = $('past-box');
-  pastBox.hidden = !past.length;
-  $('past-sum').textContent = 'Past (' + past.length + ')';
-  const pastList = $('past');
-  pastList.textContent = '';
-  past.reverse().forEach(it => pastList.appendChild(row(it, 'past', now, order)));
-
-  const dl = $('courses');
-  dl.textContent = '';
-  used.forEach(c => { const o = el('option'); o.value = c; dl.appendChild(o); });
-
-  renderMath(now, order);
-  renderTodo(now);
-  renderGoals(now);
-  renderTraining(now);
 }
 
-/* ---------- Plan my Sunday ---------- */
+/* ---------- Calendar ---------- */
+
+const START_H = 6, END_H = 24, PX = 52 / 60;
+let calStart = null;
+
+const calDays = () => (innerWidth >= 900 ? 7 : 3);
+function calFirst(now) {
+  const s = startOfDay(calStart || now);
+  return calDays() === 7 ? mondayOf(s) : s;
+}
+function shiftCal(dir) {
+  calStart = addDays(calFirst(new Date()), dir * calDays());
+  render();
+}
+function rangeLabel(first, n) {
+  const last = addDays(first, n - 1);
+  return MONTHS[first.getMonth()] + ' ' + first.getDate() + ' – '
+    + (last.getMonth() === first.getMonth() ? '' : MONTHS[last.getMonth()] + ' ') + last.getDate();
+}
+
+function chip(x, now) {
+  if (x.kind === 'due') {
+    const it = x.item;
+    const urgent = !it.done && ((due(it) > now && due(it) - now <= 72 * HOUR) || stillOverdue(it, now));
+    const c = btn((inClass(it) ? 'In class' : shortTime(minOf(due(it)))) + ' ' + it.title,
+      'chip' + (it.done ? ' done' : '') + (urgent ? ' urgent' : ''), { act: 'open', kind: 'due', id: it.id },
+      it.course + ' ' + it.title + ', due ' + timeText(it));
+    c.style.setProperty('--c', colorFor(it.course));
+    return c;
+  }
+  const t = x.todo;
+  return btn(t.text, 'chip todo' + (t.done ? ' done' : ''), { act: 'open', kind: 'todo', id: 't:' + t.id }, 'To-do: ' + t.text);
+}
+
+function blockEl(b, now) {
+  const mine = b.kind !== 'class';
+  const e = btn('', 'blk' + (mine ? ' mine' : '') + (b.done ? ' done' : ''), { act: 'open', kind: b.kind, id: b.id });
+  if (!mine) e.style.setProperty('--c', colorFor(b.course));
+  const top = Math.max(0, (b.start - START_H * 60) * PX);
+  const h = Math.max(b.dur * PX, 22);
+  e.style.top = top + 'px';
+  e.style.height = (h - 2) + 'px';
+  e.style.left = 'calc(' + (b.col / b.cols * 100) + '% + 2px)';
+  e.style.width = 'calc(' + (100 / b.cols) + '% - 4px)';
+  if (h < 36) e.classList.add('short');
+  else if (h < 64) e.classList.add('one');
+  e.appendChild(el('span', 'bt', b.title));
+  e.appendChild(el('span', 'bs', b.kind === 'class' && h >= 50 ? rangeText(b.start, b.dur) + ' · ' + b.sub : rangeText(b.start, b.dur)));
+  if (b.kind !== 'class') {
+    e.dataset.drag = '1';
+    e.dataset.date = b.date;
+    e.dataset.start = b.start;
+    e.dataset.dur = b.dur;
+  }
+  e.setAttribute('aria-label', b.title + ', ' + dayLabel(fromYmd(b.date), now) + ', ' + rangeText(b.start, b.dur));
+  return e;
+}
+
+function renderCalendar(now) {
+  const n = calDays(), first = calFirst(now);
+  const root = $('cal');
+  root.style.setProperty('--n', n);
+  root.textContent = '';
+  $('cal-range').textContent = rangeLabel(first, n);
+  $('cal-hint').textContent = matchMedia('(hover: hover)').matches
+    ? 'Click an empty spot to add something at that time. Drag your own items to move them.'
+    : 'Tap an empty spot to add something. Press and hold your own items to drag them. Swipe to see more days.';
+  const days = Array.from({ length: n }, (_, i) => addDays(first, i));
+  const todayKey = ymd(now);
+
+  const head = el('div', 'cal-head');
+  head.appendChild(el('div'));
+  days.forEach(d => {
+    const h = el('div', 'dayhead' + (ymd(d) === todayKey ? ' today' : ''));
+    h.append(el('span', 'dn', DAYS[d.getDay()].slice(0, 3)), el('span', 'dd', String(d.getDate())));
+    head.appendChild(h);
+  });
+
+  const ad = el('div', 'cal-allday');
+  ad.appendChild(el('div', 'gut-lab', 'Due'));
+  days.forEach(d => {
+    const cell = el('div', 'adcell');
+    cell.dataset.date = ymd(d);
+    alldayFor(ymd(d), now).forEach(x => cell.appendChild(chip(x, now)));
+    ad.appendChild(cell);
+  });
+
+  const body = el('div', 'cal-body');
+  const hours = el('div', 'hours');
+  for (let h = START_H + 1; h < END_H; h++) {
+    const s = el('span', null, (h % 12 || 12) + (h < 12 ? ' am' : ' pm'));
+    s.style.top = (h - START_H) * 60 * PX + 'px';
+    hours.appendChild(s);
+  }
+  body.appendChild(hours);
+  const blocks = blocksIn(first, n);
+  days.forEach(d => {
+    const key = ymd(d);
+    const col = el('div', 'col' + (key === todayKey ? ' today' : ''));
+    col.dataset.date = key;
+    const mine = blocks.filter(b => b.date === key);
+    layoutDay(mine);
+    mine.forEach(b => col.appendChild(blockEl(b, now)));
+    if (key === todayKey && minOf(now) >= START_H * 60) {
+      const line = el('div', 'now');
+      line.style.top = (minOf(now) - START_H * 60) * PX + 'px';
+      col.appendChild(line);
+    }
+    body.appendChild(col);
+  });
+  root.append(head, ad, body);
+}
+
+function scrollCalToNow() {
+  const body = document.querySelector('#cal .cal-body');
+  if (!body) return;
+  const now = new Date();
+  const off = dayDiff(now, calFirst(now));
+  const target = off >= 0 && off < calDays() ? Math.max(minOf(now) - 90, START_H * 60) : 7 * 60;
+  const headH = document.querySelector('.top').offsetHeight + document.querySelector('#cal .cal-head').offsetHeight;
+  const y = body.getBoundingClientRect().top + scrollY + (target - START_H * 60) * PX - headH;
+  scrollTo(0, Math.max(0, y));
+}
+
+/* Dragging your own blocks: mouse drags right away; a finger presses and holds first. */
+let drag = null, suppressClick = false, swipe = null;
+
+function beginDrag(target, x, y, type) {
+  const r = target.getBoundingClientRect();
+  drag = { el: target, type, x0: x, y0: y, grabY: y - r.top, kind: target.dataset.kind, id: target.dataset.id,
+    dur: Number(target.dataset.dur), origDate: target.dataset.date, origStart: Number(target.dataset.start),
+    date: target.dataset.date, start: Number(target.dataset.start), active: false, timer: 0 };
+}
+function startDrag() {
+  if (!drag) return;
+  clearTimeout(drag.timer);
+  drag.active = true;
+  drag.cols = [...document.querySelectorAll('#cal .col')];
+  drag.el.classList.add('dragging');
+  if (navigator.vibrate) navigator.vibrate(10);
+}
+function moveDrag(x, y) {
+  const cols = drag.cols;
+  let col = cols.find(c => { const r = c.getBoundingClientRect(); return x >= r.left && x < r.right; });
+  if (!col) col = x < cols[0].getBoundingClientRect().left ? cols[0] : cols[cols.length - 1];
+  if (drag.el.parentNode !== col) col.appendChild(drag.el);
+  const r = col.getBoundingClientRect();
+  let min = Math.round((START_H * 60 + (y - r.top - drag.grabY) / PX) / 15) * 15;
+  min = Math.max(START_H * 60, Math.min(END_H * 60 - 15, min));
+  drag.date = col.dataset.date;
+  drag.start = min;
+  Object.assign(drag.el.style, { top: (min - START_H * 60) * PX + 'px', left: '2px', width: 'calc(100% - 4px)' });
+  const s = drag.el.querySelector('.bs');
+  if (s) s.textContent = rangeText(min, drag.dur);
+  if (y < 120) scrollBy(0, -12);
+  else if (y > innerHeight - 150) scrollBy(0, 12);
+}
+function commitMove(d) {
+  if (d.kind === 'todo') {
+    const t = state.todos.find(x => 't:' + x.id === d.id);
+    if (t) { t.date = d.date; t.time = fromMin(d.start); }
+  } else {
+    const b = routineFor(fromYmd(d.id.slice(2))).find(x => x.id === d.id);
+    if (!b) return;
+    if (d.date === b.origin && d.start === b.defStart) delete state.overrides[d.id];
+    else state.overrides[d.id] = { date: d.date, start: d.start };
+  }
+  save();
+}
+function endDrag() {
+  const d = drag;
+  drag = null;
+  d.el.classList.remove('dragging');
+  suppressClick = true;
+  setTimeout(() => { suppressClick = false; }, 350);
+  if (d.date !== d.origDate || d.start !== d.origStart) {
+    commitMove(d);
+    toast('Moved to ' + shortDay(fromYmd(d.date), new Date()) + ' at ' + clock(d.start) + '.');
+  }
+  render();
+}
+function cancelDrag() {
+  if (!drag) return;
+  clearTimeout(drag.timer);
+  const was = drag.active;
+  drag = null;
+  if (was) render();
+}
+
+/* ---------- To-do tab ---------- */
+
+function renderTodos(now) {
+  const box = $('todo-list');
+  box.textContent = '';
+  [['today', 'Today'], ['tomorrow', 'Tomorrow'], ['week', 'This week'], ['later', 'Later'], ['someday', 'Someday']].forEach(([g, name]) => {
+    const list = todosFor(g, now);
+    if (!list.length && g !== 'today') return;
+    const sec = el('section', 'sec');
+    const head = el('div', 'sec-head');
+    head.appendChild(el('h2', null, name));
+    if (list.length) head.appendChild(el('span', 'aside', list.filter(t => !t.done).length + ' open'));
+    sec.appendChild(head);
+    if (!list.length) sec.appendChild(el('p', 'empty', 'Nothing for today yet.'));
+    const ul = el('ul', 'rows');
+    list.forEach(t => ul.appendChild(todoRow(t, now)));
+    sec.appendChild(ul);
+    box.appendChild(sec);
+  });
+  box.appendChild(el('p', 'tip', 'Tap a to-do to change its day or give it a time. To-dos with a time show up on the calendar.'));
+}
+
+/* ---------- Classes tab ---------- */
+
+function scheduleText(c) {
+  if (!c.days.length) return c.note || 'Class times not added yet.';
+  const names = c.days.map(d => DAYS[d].slice(0, 3)).join(', ');
+  return names + ' · ' + rangeText(toMin(c.start), toMin(c.end) - toMin(c.start)) + ' · ' + c.room;
+}
+
+function renderClasses(now) {
+  const box = $('class-list');
+  box.textContent = '';
+  courseOrder().forEach(course => {
+    const c = CLASSES.find(x => x.course === course) || { course, name: '', days: [] };
+    const items = state.items.filter(i => i.course === course).sort(byDue);
+    const upcoming = items.filter(i => due(i) >= now || stillOverdue(i, now));
+    const past = items.filter(i => !upcoming.includes(i)).reverse();
+    const sec = el('section', 'sec');
+    sec.style.setProperty('--c', colorFor(course));
+    const head = el('div', 'class-head');
+    head.appendChild(el('span', 'bar'));
+    const names = el('div');
+    names.append(el('h2', null, course), el('p', null, c.name));
+    head.appendChild(names);
+    const open = upcoming.filter(i => !i.done).length;
+    head.appendChild(el('span', 'aside', open + ' coming up'));
+    sec.appendChild(head);
+    sec.appendChild(el('p', 'sched', scheduleText(c)));
+    if (upcoming.length) {
+      const ul = el('ul', 'rows');
+      upcoming.slice(0, 4).forEach(i => ul.appendChild(dueRow(i, now, { dayTime: true })));
+      sec.appendChild(ul);
+      if (upcoming.length > 4) {
+        const more = el('details', 'more');
+        more.appendChild(el('summary', null, 'Show ' + (upcoming.length - 4) + ' more'));
+        const ul2 = el('ul', 'rows');
+        upcoming.slice(4).forEach(i => ul2.appendChild(dueRow(i, now, { dayTime: true })));
+        more.appendChild(ul2);
+        sec.appendChild(more);
+      }
+    } else {
+      sec.appendChild(el('p', 'empty', 'No due dates yet.'));
+    }
+    if (past.length) {
+      const more = el('details', 'more');
+      more.appendChild(el('summary', null, 'Past (' + past.length + ')'));
+      const ul = el('ul', 'rows');
+      past.forEach(i => ul.appendChild(dueRow(i, now, { dayTime: true })));
+      more.appendChild(ul);
+      sec.appendChild(more);
+    }
+    if (course === MATH) renderMathInto(sec, now);
+    sec.appendChild(btn('Add a deadline', 'quiet flush', { act: 'add', course }));
+    box.appendChild(sec);
+  });
+}
+
+/* ---------- Goals tab ---------- */
+
+function goalRow(x, g) {
+  const n = g.counts[x.id] || 0;
+  const row = el('div', 'goal' + (n >= x.target ? ' met' : ''));
+  const left = el('div');
+  left.appendChild(el('p', 'label', x.label));
+  const pips = el('div', 'pips');
+  for (let i = 0; i < Math.max(x.target, n); i++) pips.appendChild(el('i', i < n ? 'on' : null));
+  left.appendChild(pips);
+  row.appendChild(left);
+  row.appendChild(el('p', 'count', n + ' of ' + x.target));
+  const steps = el('div', 'steps');
+  steps.append(btn('−1', 'outline sq', { act: 'goal-dec', goal: x.id }, 'Remove one: ' + x.label),
+    btn('+1', 'outline sq', { act: 'goal-inc', goal: x.id }, 'Add one: ' + x.label));
+  row.appendChild(steps);
+  return row;
+}
+
+function renderGoals(now) {
+  const box = $('goals-list');
+  box.textContent = '';
+  const g = currentGoals(now);
+  const mon = mondayOf(now), sun = addDays(mon, 6);
+
+  const net = el('section', 'sec');
+  const h1 = el('div', 'sec-head');
+  h1.append(el('h2', null, 'Networking'), el('span', 'aside', MONTHS[mon.getMonth()] + ' ' + mon.getDate() + ' – ' + MONTHS[sun.getMonth()] + ' ' + sun.getDate()));
+  net.appendChild(h1);
+  net.appendChild(el('p', 'step-line', networkingToday(now)));
+  const list = el('div');
+  GOALS.forEach(x => list.appendChild(goalRow(x, g)));
+  net.appendChild(list);
+  net.appendChild(el('p', 'tip', "Start with Cal Poly alumni and people you've met in person. They're much more likely to respond."));
+  if (g.last) net.appendChild(el('p', 'tip', 'Last week: ' + GOALS.map(x => (g.last.counts[x.id] || 0) + ' of ' + x.target + ' ' + x.short).join(', ') + '.'));
+
+  const tr = el('section', 'sec');
+  const h2 = el('div', 'sec-head');
+  h2.appendChild(el('h2', null, 'Training'));
+  tr.appendChild(h2);
+  tr.appendChild(el('p', 'muted', trainingPhase(now)));
+  const race = el('label', 'fl');
+  race.style.margin = '1rem 0 0.5rem';
+  race.style.maxWidth = '14rem';
+  race.appendChild(document.createTextNode('Race date'));
+  const ri = el('input');
+  ri.type = 'date';
+  ri.value = state.training.raceDate || '';
+  ri.addEventListener('change', () => { state.training.raceDate = ri.value; save(); render(); });
+  race.appendChild(ri);
+  tr.appendChild(race);
+  const ul = el('ul', 'rows');
+  let planned = 0, done = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(mon, i), key = ymd(d);
+    const w = workoutFor(d);
+    const rest = isRest(w.text);
+    const isDone = !!state.training.done[key];
+    if (!rest) { planned++; if (isDone) done++; }
+    const li = el('li', 'row' + (isDone ? ' done' : ''));
+    li.appendChild(el('span', 'bar'));
+    const main = rest ? el('div', 'main') : btn('', 'main', { act: 'open', kind: 'workout', id: 'w:' + key });
+    main.appendChild(el('span', 't', (dayDiff(d, now) === 0 ? 'Today' : DAYS[d.getDay()].slice(0, 3)) + ' · ' + (rest ? 'Rest' : workoutMeta(w.text).title)));
+    main.appendChild(el('span', 'm', w.text));
+    li.appendChild(main);
+    if (!rest && d <= now) li.appendChild(btn(isDone ? 'Undo' : 'Done', 'quiet', { act: 'workout-toggle', date: key }));
+    else li.appendChild(el('span'));
+    ul.appendChild(li);
+  }
+  tr.appendChild(ul);
+  tr.appendChild(el('p', 'tip', done + ' of ' + planned + ' workouts done this week.'));
+
+  const set = el('section', 'sec');
+  const h3 = el('div', 'sec-head');
+  h3.appendChild(el('h2', null, 'Settings'));
+  set.appendChild(h3);
+  set.appendChild(el('p', 'hint', 'Everything saves on this device only. Your phone and laptop keep separate copies.'));
+  set.appendChild(btn('Reset class due dates', 'quiet flush', { act: 'reset' }));
+  set.appendChild(el('p', 'hint', 'Keeps your to-dos, goals, and training.'));
+
+  box.append(net, tr, set);
+}
+
+/* ---------- Plan my week ---------- */
 
 function advice(it, blunt) {
   const morning = due(it).getHours() < 12;
@@ -608,7 +1409,6 @@ function buildPlan() {
   const end = addDays(today, 7);
   const blunt = TONE === 'blunt';
   const name = it => it.course + ' ' + it.title;
-
   const open = state.items.filter(i => !i.done).sort(byDue);
   const overdue = open.filter(i => stillOverdue(i, now));
   const week = open.filter(i => due(i) >= now && due(i) < end);
@@ -641,10 +1441,11 @@ function buildPlan() {
   }
   for (let n = 0; n < 7; n++) {
     const day = addDays(today, n);
+    const key = ymd(day);
     const items = week.filter(i => dayDiff(due(i), day) === 0);
     let lines;
     if (items.length) {
-      lines = items.map(i => { const t = timeText(i); return t.charAt(0).toUpperCase() + t.slice(1) + ' · ' + name(i) + '. ' + advice(i, blunt); });
+      lines = items.map(i => cap(timeText(i)) + ' · ' + name(i) + '. ' + advice(i, blunt));
     } else {
       const next = open.find(i => due(i) >= addDays(day, 1));
       lines = [next
@@ -652,10 +1453,10 @@ function buildPlan() {
         : (blunt ? 'Nothing due.' : 'Nothing due. Rest up.')];
     }
     lines.unshift('Workout: ' + workoutFor(day).text);
-    const key = ymd(day);
     state.todos
       .filter(t => !t.done && (t.date === key || (n === 0 && t.date && t.date < key)))
-      .forEach(t => lines.push('To-do: ' + t.text));
+      .sort(todoSort)
+      .forEach(t => lines.push('To-do: ' + (t.time ? clock(toMin(t.time)) + ' · ' : '') + t.text));
     blocks.push({ h: dayLabel(day, now), lines });
   }
   const outro = blunt ? 'Open this again next Sunday.' : 'Nice work planning ahead. See you next Sunday.';
@@ -669,31 +1470,10 @@ function planText(p) {
   return out.join('\n');
 }
 
-let lastPlan = '';
-
-function showPlan() {
-  const p = buildPlan();
-  lastPlan = planText(p);
-  const box = $('plan-out');
-  box.textContent = '';
-  box.appendChild(el('p', 'lead', p.intro));
-  p.blocks.forEach(b => {
-    box.appendChild(el('h3', null, b.h));
-    const ul = el('ul');
-    b.lines.forEach(l => ul.appendChild(el('li', null, l)));
-    box.appendChild(ul);
-  });
-  box.appendChild(el('p', 'outro', p.outro));
-  box.hidden = false;
-  $('plan-tools').hidden = false;
-  $('copy-flash').textContent = '';
-}
-
 async function copyPlan() {
-  const flash = $('copy-flash');
   try {
     await navigator.clipboard.writeText(lastPlan);
-    flash.textContent = 'Copied.';
+    toast('Plan copied.');
   } catch (e) {
     const ta = el('textarea');
     ta.value = lastPlan;
@@ -702,13 +1482,12 @@ async function copyPlan() {
     let ok = false;
     try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
     ta.remove();
-    flash.textContent = ok ? 'Copied.' : 'Copy did not work here. Select the plan and copy it by hand.';
+    toast(ok ? 'Plan copied.' : "Copy didn't work here. Select the plan and copy it by hand.");
   }
 }
 
 /* ---------- Math course sheet (read live when online) ---------- */
 
-const MATH = 'MATH 1267';
 const SHEET_ID = '1ZNvghKpYX571ga_KQxiuFbBQWPIQYW-_dOMlUlSD-a4';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/edit';
 const SYNC_KEY = 'life-crm-math';
@@ -757,8 +1536,6 @@ function parseCalendar(rows) {
     if (i >= 0) { dateCol = i; break; }
   }
   if (planCol < 0 || dateCol < 0) throw new Error('calendar layout changed');
-
-  // Which sections each quiz, exam, and homework check covers.
   const covers = {};
   let curTest = null, curHwc = null;
   const events = [];
@@ -842,9 +1619,9 @@ function stamp(ts, now) {
   return (dayDiff(d, now) === 0 ? 'today' : MONTHS[d.getMonth()] + ' ' + d.getDate()) + ' at ' + fmtTime(d);
 }
 
-function renderMath(now, order) {
-  const line = $('math-sync');
-  line.textContent = '';
+function renderMathInto(sec, now) {
+  sec.appendChild(el('h3', 'sub-h', 'Homework'));
+  const line = el('p', 'hint');
   let msg;
   if (syncState === 'ok') msg = 'Updated from the course sheet ' + stamp(mathCache.at, now) + '. ';
   else if (syncState === 'loading') msg = 'Checking the course sheet. ';
@@ -855,363 +1632,489 @@ function renderMath(now, order) {
   a.href = SHEET_URL;
   a.target = '_blank';
   a.rel = 'noopener';
+  a.style.color = 'var(--ink)';
   line.appendChild(a);
-
-  const box = $('math-hw');
-  box.textContent = '';
-  const list = ((mathCache && mathCache.homework) || []).slice().reverse(); // newest section first
-  const color = colorFor(MATH, order);
+  sec.appendChild(line);
+  const list = ((mathCache && mathCache.homework) || []).slice().reverse();
+  if (!list.length) return;
   const make = items => {
-    const ul = el('ul', 'hw');
+    const ul = el('ul', 'rows');
     items.forEach(x => {
-      const li = el('li');
-      li.style.setProperty('--c', color);
-      li.appendChild(el('p', 'title', x.section + ' ' + x.topic));
-      li.appendChild(el('p', null, 'Problems: ' + x.problems));
-      if (x.examples && x.examples.toLowerCase() !== 'none') li.appendChild(el('p', 'examples', 'Examples to review: ' + x.examples));
+      const li = el('li', 'row');
+      li.appendChild(el('span', 'bar'));
+      const main = el('div', 'main');
+      main.appendChild(el('span', 't', x.section + ' ' + x.topic));
+      main.appendChild(el('span', 'm', 'Problems: ' + x.problems));
+      if (x.examples && x.examples.toLowerCase() !== 'none') main.appendChild(el('span', 'm', 'Examples to review: ' + x.examples));
+      li.appendChild(main);
+      li.appendChild(el('span'));
       ul.appendChild(li);
     });
     return ul;
   };
-  if (!list.length) return;
-  box.appendChild(make(list.slice(0, 3)));
+  sec.appendChild(make(list.slice(0, 3)));
   if (list.length > 3) {
     const more = el('details', 'more');
     more.appendChild(el('summary', null, 'Earlier sections (' + (list.length - 3) + ')'));
     more.appendChild(make(list.slice(3)));
-    box.appendChild(more);
+    sec.appendChild(more);
   }
 }
 
-/* ---------- To-do, weekly goals, training ---------- */
+/* ---------- Sheets: add and edit ---------- */
 
-const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-const fromYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
-const mondayOf = d => addDays(startOfDay(d), -((d.getDay() + 6) % 7));
+const sheet = $('sheet'), sheetBody = $('sheet-body');
+const LENGTHS = [[15, '15 min'], [30, '30 min'], [45, '45 min'], [60, '1 hour'], [90, '1.5 hours'], [120, '2 hours'], [180, '3 hours']];
 
-state.todos = state.todos || [];
-state.goals = state.goals || { week: '', counts: {} };
-state.training = state.training || { raceDate: '', done: {} };
-if (!state.training.raceDate) state.training.raceDate = '2026-11-08'; // Dale's race: Sunday, Nov 8
+function openSheet(title, build) {
+  sheetBody.textContent = '';
+  const h = el('h2', null, title);
+  h.id = 'sheet-title';
+  sheetBody.appendChild(h);
+  sheetBody.appendChild(btn('Close', 'quiet sheet-close', { act: 'close-sheet' }));
+  build(sheetBody);
+  if (!sheet.open) sheet.showModal();
+}
+function closeSheet() { if (sheet.open) sheet.close(); }
+sheet.addEventListener('click', e => { if (e.target === sheet) closeSheet(); });
 
-function quietBtn(text, act, data, aria) {
-  const b = el('button', 'quiet', text);
-  b.type = 'button';
-  b.dataset.act = act;
-  Object.assign(b.dataset, data);
-  if (aria) b.setAttribute('aria-label', aria);
-  return b;
+function field(text, control) {
+  const l = el('label', 'fl');
+  l.appendChild(document.createTextNode(text));
+  l.appendChild(control);
+  return l;
+}
+function inputEl(type, value) {
+  const i = el('input');
+  i.type = type;
+  if (value != null) i.value = value;
+  return i;
+}
+function selectEl(options, value) {
+  const s = el('select');
+  options.forEach(([v, t]) => { const o = el('option', null, t); o.value = String(v); s.appendChild(o); });
+  if (value != null) s.value = String(value);
+  return s;
 }
 
-// A personal row: same look as a due-date row, with the accent bar.
-function personalRow(title, meta, when, buttons, done) {
-  const li = el('li', 'item' + (done ? ' done' : '') + (when ? '' : ' wide'));
-  li.style.setProperty('--c', 'var(--accent)');
-  li.appendChild(el('span', 'bar'));
-  li.appendChild(el('p', 'title', title));
-  if (when) li.appendChild(el('p', 'when', when));
-  li.appendChild(el('p', 'meta', meta));
-  const actions = el('div', 'actions');
-  buttons.forEach(b => actions.appendChild(b));
-  li.appendChild(actions);
-  return li;
-}
-
-// Weekly networking goals. Counts reset every Monday.
-const GOALS = [
-  { id: 'connect', label: 'Connect with relevant people', target: 5, short: 'connections', plan: 'Connect with 5 relevant people',
-    step: n => 'connect with ' + n + (n === 1 ? ' person' : ' people') },
-  { id: 'coffee', label: 'Message people for a coffee chat', target: 2, short: 'coffee-chat messages', plan: 'Message 2 people for a coffee chat',
-    step: n => 'message ' + n + (n === 1 ? ' person' : ' people') + ' for a coffee chat' },
-  { id: 'apply', label: 'Apply to internships', target: 3, short: 'applications', plan: 'Apply to 3 internships',
-    step: n => 'apply to ' + n + (n === 1 ? ' internship' : ' internships') },
-];
-
-function currentGoals(now) {
-  const g = state.goals;
-  const week = ymd(mondayOf(now));
-  if (g.week !== week) {
-    if (g.week) g.last = { week: g.week, counts: g.counts };
-    g.week = week;
-    g.counts = {};
-    save();
-  }
-  return g;
-}
-
-// Spread each goal across the week: by today you should be at
-// round(target * days so far / 7). Today's step is the gap to that pace.
-function networkingToday(now) {
-  const g = currentGoals(now);
-  const daysIn = ((now.getDay() + 6) % 7) + 1; // Monday 1 ... Sunday 7
-  const steps = GOALS.map(x => {
-    const need = Math.round(x.target * daysIn / 7) - (g.counts[x.id] || 0);
-    return need > 0 ? x.step(need) : null;
-  }).filter(Boolean);
-  if (GOALS.every(x => (g.counts[x.id] || 0) >= x.target)) return 'Networking goals done for this week.';
-  if (!steps.length) return 'Networking: on pace. Nothing needed today.';
-  const text = steps.join(', ');
-  return text.charAt(0).toUpperCase() + text.slice(1) + '.';
-}
-
-function renderGoals(now) {
-  const g = currentGoals(now);
-  const mon = mondayOf(now), sun = addDays(mon, 6);
-  $('goals-range').textContent = MONTHS[mon.getMonth()] + ' ' + mon.getDate() + ' to ' + MONTHS[sun.getMonth()] + ' ' + sun.getDate() + '. Resets Monday.';
-  const ul = $('goals');
-  ul.textContent = '';
-  GOALS.forEach(x => {
-    const n = g.counts[x.id] || 0;
-    const li = el('li', 'goal' + (n >= x.target ? ' met' : ''));
-    li.appendChild(el('p', 'label', x.label));
-    li.appendChild(el('p', 'count', n + ' of ' + x.target));
-    const acts = el('div', 'goal-acts');
-    acts.appendChild(quietBtn('−1', 'goal-dec', { goal: x.id }, 'Remove one: ' + x.label));
-    acts.appendChild(quietBtn('+1', 'goal-inc', { goal: x.id }, 'Add one: ' + x.label));
-    li.appendChild(acts);
-    ul.appendChild(li);
-  });
-  const last = $('goals-last');
-  last.hidden = !g.last;
-  if (g.last) last.textContent = 'Last week: ' + GOALS.map(x => (g.last.counts[x.id] || 0) + ' of ' + x.target + ' ' + x.short).join(', ') + '.';
-}
-
-// Training: running block until the race, a short taper and recovery,
-// then lifting Monday, Wednesday, Friday.
-const RUN_WEEK = {
-  1: 'Easy run, 30 to 40 min.',
-  2: 'Intervals: 10 min easy, 6 × 2 min hard with 2 min easy jogs, 10 min easy.',
-  3: 'Easy run, 30 min, then 15 min core and mobility.',
-  4: 'Tempo: 10 min easy, 20 min comfortably hard, 10 min easy.',
-  5: 'Rest.',
-  6: 'Long run, 50 to 70 min at an easy pace.',
-  0: 'Rest, or a 20 min easy jog.',
-};
-const LIFT_A = 'Lift A: squat 3×8, bench press 3×8, dumbbell row 3×10, plank 3 × 30 sec.';
-const LIFT_B = 'Lift B: Romanian deadlift 3×8, overhead press 3×8, lat pulldown 3×10, lunges 3×10 each leg.';
-const LIFT_WEEK = { 2: 'Easy run, 20 to 30 min, or rest.', 4: 'Rest.', 6: 'Easy run or hike, 30 to 45 min.', 0: 'Rest.' };
-const isRest = t => t.startsWith('Rest') || t.startsWith('Recovery');
-const LIFT_DAYS = [1, 3, 5]; // Monday, Wednesday, Friday
-
-// First Monday, Wednesday, or Friday at least 4 days after the race.
-function firstLiftDay(race) {
-  let d = addDays(race, 4);
-  while (!LIFT_DAYS.includes(d.getDay())) d = addDays(d, 1);
-  return d;
-}
-
-function workoutFor(day) {
-  const wd = day.getDay();
-  const r = state.training.raceDate;
-  if (r) {
-    const race = fromYmd(r);
-    const diff = dayDiff(day, race); // days after the race (negative = before)
-    if (diff === 0) return { text: 'Race day. Warm up 10 min easy, then race.' };
-    if (diff === -1) return { text: 'Rest. Lay out your gear and sleep early.' };
-    if (diff === -2) return { text: 'Easy run, 15 to 20 min, plus 4 short strides.' };
-    if (diff >= -6 && diff <= -3) return { text: wd === 5 ? 'Rest.' : 'Easy run, 20 to 30 min. Race week: keep it easy.' };
-    if (diff >= 1 && diff <= 3) return { text: 'Recovery. Rest or an easy 20 min walk.' };
-    if (diff >= 4) {
-      if (!LIFT_DAYS.includes(wd)) return { text: LIFT_WEEK[wd] };
-      // Alternate A and B, starting with A on the first lift day.
-      let k = 0;
-      for (let d = firstLiftDay(race); d < startOfDay(day); d = addDays(d, 1)) if (LIFT_DAYS.includes(d.getDay())) k++;
-      return { text: k % 2 === 0 ? LIFT_A : LIFT_B };
-    }
-  }
-  return { text: RUN_WEEK[wd] };
-}
-
-function trainingPhase(now) {
-  const r = state.training.raceDate;
-  if (!r) return 'Running block. Set your race date and lifting starts a few days after it.';
-  const race = fromYmd(r);
-  const diff = dayDiff(now, race);
-  const raceText = DAYS[race.getDay()] + ', ' + MONTHS[race.getMonth()] + ' ' + race.getDate();
-  if (diff < -6) return 'Running block until your race on ' + raceText + '.';
-  if (diff < 0) return 'Race week. Race on ' + raceText + '. Keep every run easy.';
-  if (diff === 0) return 'Race day. Go get it.';
-  if (diff <= 3) return 'Recovery after your race. Lifting starts ' + inSentence(firstLiftDay(race), now) + '.';
-  return 'Strength block: lift Monday, Wednesday, Friday. Start light, and add 5 lb when every set feels solid.';
-}
-
-function renderTraining(now) {
-  $('train-phase').textContent = trainingPhase(now);
-  const input = $('race-date');
-  if (document.activeElement !== input) input.value = state.training.raceDate || '';
-  const ul = $('train-week');
-  ul.textContent = '';
-  const mon = mondayOf(now);
-  let planned = 0, done = 0;
-  for (let n = 0; n < 7; n++) {
-    const day = addDays(mon, n);
-    const key = ymd(day);
-    const w = workoutFor(day);
-    const rest = isRest(w.text);
-    const isDone = !!state.training.done[key];
-    if (!rest) { planned++; if (isDone) done++; }
-    const btns = !rest && day <= now
-      ? [quietBtn(isDone ? 'Undo' : 'Done', 'workout-toggle', { date: key }, (isDone ? 'Mark not done: ' : 'Mark done: ') + w.text)]
-      : [];
-    const when = dayDiff(day, now) === 0 ? 'Today' : DAYS[day.getDay()].slice(0, 3);
-    ul.appendChild(personalRow(w.text, rest ? 'Rest day' : 'Workout', when, btns, isDone));
-  }
-  $('train-count').textContent = done + ' of ' + planned + ' workouts done this week.';
-}
-
-function renderTodo(now) {
-  const today = ymd(now), tomorrow = ymd(addDays(now, 1));
-  const groups = { Today: [], Tomorrow: [], Later: [] };
-
-  const w = workoutFor(startOfDay(now));
-  const wDone = !!state.training.done[today];
-  groups.Today.push(personalRow(w.text, isRest(w.text) ? 'Rest day' : 'Workout', '',
-    isRest(w.text) ? [] : [quietBtn(wDone ? 'Undo' : 'Done', 'workout-toggle', { date: today }, 'Mark workout done')], wDone));
-  groups.Today.push(personalRow(networkingToday(now), 'Networking · log it under Goals this week', '', [], false));
-  const wt = workoutFor(addDays(startOfDay(now), 1));
-  groups.Tomorrow.push(personalRow(wt.text, isRest(wt.text) ? 'Rest day' : 'Workout', '', [], false));
-
-  const todos = state.todos
-    .filter(t => !t.done || t.doneOn === today) // finished on an earlier day: hide
-    .sort((a, b) => (a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : a.id < b.id ? -1 : 1);
-  todos.forEach(t => {
-    const btns = [
-      quietBtn(t.done ? 'Undo' : 'Done', 'todo-toggle', { id: t.id }, (t.done ? 'Mark not done: ' : 'Mark done: ') + t.text),
-      quietBtn('Delete', 'todo-delete', { id: t.id }, 'Delete: ' + t.text),
-    ];
-    if (t.date && t.date <= today) {
-      const meta = t.date < today ? 'To-do · carried over from ' + shortDay(fromYmd(t.date), now) : 'To-do';
-      groups.Today.push(personalRow(t.text, meta, '', btns, t.done));
-    } else if (t.date === tomorrow) {
-      groups.Tomorrow.push(personalRow(t.text, 'To-do', '', btns, t.done));
-    } else {
-      groups.Later.push(personalRow(t.text, 'To-do', t.date ? shortDay(fromYmd(t.date), now) : 'Someday', btns, t.done));
-    }
-  });
-
-  const box = $('todo');
-  box.textContent = '';
-  Object.keys(groups).forEach(name => {
-    if (name === 'Later' && !groups.Later.length) return;
-    const wrap = el('div', 'day');
-    wrap.appendChild(el('h3', null, name));
-    const ul = el('ul', 'items');
-    groups[name].forEach(li => ul.appendChild(li));
-    wrap.appendChild(ul);
-    box.appendChild(wrap);
+function openAdd(pre = {}) {
+  openSheet(pre.course ? 'Add a deadline' : 'Add', box => {
+    const f = el('form', 'f');
+    f.autocomplete = 'off';
+    const what = inputEl('text', '');
+    what.required = true;
+    const course = selectEl([['', 'Nothing, it’s mine']].concat(courseOrder().map(c => [c, c])), pre.course || '');
+    const type = selectEl(Object.entries(TYPES), 'assignment');
+    const date = inputEl('date', pre.date || ymd(new Date()));
+    const time = inputEl('time', pre.time || '');
+    const len = selectEl(LENGTHS, 60);
+    const typeF = field('Type', type), lenF = field('Length', len);
+    const pair = el('div', 'pair');
+    pair.append(field('Day', date), field('Time (optional)', time));
+    const hint = el('p', 'hint');
+    const sync = () => {
+      typeF.hidden = !course.value;
+      lenF.hidden = !!course.value || !time.value;
+      hint.textContent = course.value
+        ? 'Shows on the calendar on its due day, and on the ' + course.value + ' page.'
+        : time.value ? 'Shows on the calendar at that time. You can drag it later.' : 'No time: it goes on your to-do list for that day.';
+    };
+    course.addEventListener('change', sync);
+    time.addEventListener('input', sync);
+    time.addEventListener('change', sync);
+    f.append(field('What', what), field('For a class?', course), typeF, pair, lenF, hint);
+    const row = el('div', 'btns');
+    const saveB = el('button', 'primary', 'Save');
+    saveB.type = 'submit';
+    row.append(saveB, btn('Cancel', 'quiet', { act: 'close-sheet' }));
+    f.appendChild(row);
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      const text = what.value.trim();
+      if (!text) { what.focus(); return; }
+      if (course.value) {
+        const [y, m, d] = (date.value || ymd(new Date())).split('-').map(Number);
+        const [h, mi] = (time.value || '23:59').split(':').map(Number);
+        state.items.push({ id: 'a' + Date.now(), course: course.value, title: text, type: type.value,
+          due: [y, m, d, h, mi], notes: '', done: false, added: true });
+      } else {
+        const t = { id: 't' + Date.now(), text, date: date.value, done: false, doneOn: null };
+        if (time.value) { t.time = time.value; t.dur = Number(len.value); }
+        state.todos.push(t);
+      }
+      save();
+      closeSheet();
+      render();
+      toast('Added ' + text + '.');
+    });
+    box.appendChild(f);
+    sync();
+    if (!pre.time) setTimeout(() => what.focus(), 60);
   });
 }
 
-function handlePersonal(b) {
-  const act = b.dataset.act;
-  if (act === 'todo-toggle') {
-    const t = state.todos.find(x => x.id === b.dataset.id);
-    if (t) { t.done = !t.done; t.doneOn = t.done ? ymd(new Date()) : null; }
-  } else if (act === 'todo-delete') {
-    if (confirm('Delete this to-do?')) state.todos = state.todos.filter(x => x.id !== b.dataset.id);
-  } else if (act === 'workout-toggle') {
-    const k = b.dataset.date;
-    if (state.training.done[k]) delete state.training.done[k];
-    else state.training.done[k] = true;
-  } else if (act === 'goal-inc' || act === 'goal-dec') {
-    const g = currentGoals(new Date());
-    const n = (g.counts[b.dataset.goal] || 0) + (act === 'goal-inc' ? 1 : -1);
-    g.counts[b.dataset.goal] = Math.max(0, n);
-  } else {
-    return false;
-  }
-  return true;
-}
-
-$('todo-form').elements.when.addEventListener('change', e => {
-  $('todo-date-wrap').hidden = e.target.value !== 'date';
-});
-
-$('todo-form').addEventListener('submit', e => {
-  e.preventDefault();
-  const form = e.target;
-  const text = form.elements.text.value.trim();
-  if (!text) return;
+function openItem(kind, id) {
   const now = new Date();
-  const when = form.elements.when.value;
-  let date = '';
-  if (when === 'today') date = ymd(now);
-  else if (when === 'tomorrow') date = ymd(addDays(now, 1));
-  else if (when === 'date') date = form.elements.date.value || ymd(now);
-  state.todos.push({ id: 't' + Date.now(), text, date, done: false, doneOn: null });
-  save();
-  render();
-  form.reset();
-  $('todo-date-wrap').hidden = true;
-  form.elements.text.focus();
-});
+  if (kind === 'due') {
+    const it = state.items.find(i => i.id === id);
+    if (it) dueSheet(it, now);
+  } else if (kind === 'todo') {
+    const t = state.todos.find(x => 't:' + x.id === id);
+    if (t) todoSheet(t, now);
+  } else if (kind === 'workout' || kind === 'network') {
+    const b = routineFor(fromYmd(id.slice(2))).find(x => x.id === id);
+    if (b) routineSheet(b, now);
+  } else if (kind === 'class') {
+    const parts = id.split(':');
+    const b = classesOn(fromYmd(parts[2])).find(x => x.course === parts[1]);
+    if (b) classSheet(b, now);
+  }
+}
 
-$('race-date').addEventListener('change', e => {
-  state.training.raceDate = e.target.value;
-  save();
+function dueSheet(it, now) {
+  openSheet(it.title, box => {
+    const d = due(it);
+    box.appendChild(el('p', 'muted', it.course + ' · ' + (TYPES[it.type] || 'Assignment')));
+    box.appendChild(el('p', null, 'Due ' + dayLabel(d, now) + atTime(it) + '.'));
+    if (!it.done && d > now) box.appendChild(el('p', 'left', cap(timeLeft(d, now))));
+    if (stillOverdue(it, now)) box.appendChild(el('p', 'left', cap(timeLeft(d, now))));
+    if (it.notes) box.appendChild(el('p', 'muted', it.notes));
+    const row = el('div', 'btns');
+    row.append(btn(it.done ? 'Mark not done' : 'Mark done', 'primary', { act: 'due-toggle', id: it.id, close: '1' }),
+      btn('Delete', 'quiet', { act: 'due-delete', id: it.id }));
+    box.appendChild(row);
+  });
+}
+
+function todoSheet(t, now) {
+  openSheet(t.text, box => {
+    const f = el('form', 'f');
+    f.autocomplete = 'off';
+    const what = inputEl('text', t.text);
+    what.required = true;
+    const date = inputEl('date', t.date || '');
+    const time = inputEl('time', t.time || '');
+    const len = selectEl(LENGTHS, t.dur || 60);
+    const lenF = field('Length', len);
+    const sync = () => { lenF.hidden = !time.value; };
+    time.addEventListener('input', sync);
+    time.addEventListener('change', sync);
+    const moves = el('div', 'moves');
+    const today = new Date();
+    [['Today', ymd(today)], ['Tomorrow', ymd(addDays(today, 1))], ['Next week', ymd(addDays(mondayOf(today), 7))], ['Someday', '']].forEach(([txt, val]) => {
+      const b = btn(txt, 'outline');
+      b.addEventListener('click', () => { date.value = val; if (!val) { time.value = ''; sync(); } });
+      moves.appendChild(b);
+    });
+    const pair = el('div', 'pair');
+    pair.append(field('Day', date), field('Time (optional)', time));
+    f.append(field('What', what), field('Move to', moves), pair, lenF);
+    const row = el('div', 'btns');
+    const saveB = el('button', 'primary', 'Save');
+    saveB.type = 'submit';
+    row.append(saveB, btn(t.done ? 'Mark not done' : 'Mark done', 'outline', { act: 'todo-toggle', id: t.id, close: '1' }),
+      btn('Delete', 'quiet', { act: 'todo-delete', id: t.id }));
+    f.appendChild(row);
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      const text = what.value.trim();
+      if (!text) { what.focus(); return; }
+      t.text = text;
+      t.date = date.value;
+      if (time.value && date.value) { t.time = time.value; t.dur = Number(len.value); }
+      else { delete t.time; delete t.dur; }
+      save();
+      closeSheet();
+      render();
+      toast('Saved.');
+    });
+    box.appendChild(f);
+    sync();
+  });
+}
+
+function routineSheet(b, now) {
+  openSheet(b.kind === 'workout' ? b.title : 'Networking', box => {
+    if (b.kind === 'workout') {
+      box.appendChild(el('p', null, b.text));
+    } else {
+      const g = currentGoals(now);
+      box.appendChild(el('p', null, b.origin === ymd(now) ? networkingToday(now) : '20 minutes on your weekly goal.'));
+      box.appendChild(el('p', 'muted', 'This week: ' + GOALS.map(x => (g.counts[x.id] || 0) + ' of ' + x.target + ' ' + x.short).join(', ') + '.'));
+    }
+    const f = el('form', 'f');
+    const date = inputEl('date', b.date);
+    const time = inputEl('time', fromMin(b.start));
+    const pair = el('div', 'pair');
+    pair.append(field('Day', date), field('Time', time));
+    f.appendChild(pair);
+    f.appendChild(el('p', 'hint', 'Usually ' + clock(b.defStart) + (b.moved ? '. You moved this one.' : '.')));
+    const row = el('div', 'btns');
+    const saveB = el('button', 'primary', 'Save');
+    saveB.type = 'submit';
+    row.appendChild(saveB);
+    if (b.kind === 'workout' && fromYmd(b.origin) <= now) row.appendChild(btn(b.done ? 'Mark not done' : 'Mark done', 'outline', { act: 'workout-toggle', date: b.origin, close: '1' }));
+    if (b.moved) row.appendChild(btn('Back to usual time', 'quiet', { act: 'routine-reset', id: b.id }));
+    if (b.kind === 'network') row.appendChild(btn('Log progress', 'quiet', { act: 'tab', tab: 'goals', close: '1' }));
+    f.appendChild(row);
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!date.value || !time.value) return;
+      const start = toMin(time.value);
+      if (date.value === b.origin && start === b.defStart) delete state.overrides[b.id];
+      else state.overrides[b.id] = { date: date.value, start };
+      save();
+      closeSheet();
+      render();
+      toast('Moved.');
+    });
+    box.appendChild(f);
+  });
+}
+
+function classSheet(b, now) {
+  openSheet(b.course + ' · ' + b.cls.name, box => {
+    box.appendChild(el('p', null, dayLabel(fromYmd(b.date), now) + ', ' + rangeText(b.start, b.dur)));
+    box.appendChild(el('p', 'muted', b.sub));
+    const dues = state.items.filter(i => i.course === b.course && ymd(due(i)) === b.date).sort(byDue);
+    if (dues.length) {
+      box.appendChild(el('h3', 'sub-h', 'Due that day'));
+      const ul = el('ul', 'rows');
+      dues.forEach(i => ul.appendChild(dueRow(i, now)));
+      box.appendChild(ul);
+    }
+    const row = el('div', 'btns');
+    row.appendChild(btn('See all ' + b.course + ' dates', 'outline', { act: 'tab', tab: 'classes', close: '1' }));
+    box.appendChild(row);
+  });
+}
+
+/* ---------- Toast ---------- */
+
+let toastTimer = 0;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 2200);
+}
+
+/* ---------- Render ---------- */
+
+let tab = 'today';
+const TAB_NAMES = { today: 'Today', calendar: 'Calendar', todo: 'To-do', classes: 'Classes', goals: 'Goals' };
+const VIEWS = { today: renderToday, calendar: renderCalendar, todo: renderTodos, classes: renderClasses, goals: renderGoals };
+
+function render() {
+  if (drag && drag.active) return;
+  const now = new Date();
+  Object.keys(VIEWS).forEach(v => { $('view-' + v).hidden = v !== tab; });
+  document.querySelectorAll('.tabs [data-tab], .tabs-top [data-tab]').forEach(b => {
+    if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  $('page-title').textContent = TAB_NAMES[tab];
+  const edit = $('edit-btn');
+  edit.hidden = tab !== 'today';
+  edit.textContent = editing ? 'Done' : 'Edit';
+  VIEWS[tab](now);
+  $('storage-warn').hidden = storageOk;
+}
+
+function goTab(t) {
+  if (!VIEWS[t]) return;
+  tab = t;
+  editing = false;
   render();
-});
+  scrollTo(0, 0);
+  if (t === 'calendar') requestAnimationFrame(scrollCalToNow);
+}
 
 /* ---------- Events ---------- */
 
 document.addEventListener('click', e => {
-  const b = e.target.closest('button[data-act]');
+  const b = e.target.closest('[data-act]');
   if (!b) return;
-  if (handlePersonal(b)) { save(); render(); return; }
-  const it = state.items.find(i => i.id === b.dataset.id);
-  if (!it) return;
-  if (b.dataset.act === 'toggle') {
-    it.done = !it.done;
-  } else if (b.dataset.act === 'delete') {
-    if (!confirm('Delete this item?')) return;
-    state.items = state.items.filter(i => i !== it);
-    if (!it.added) state.deleted.push(keyOf(it));
+  const a = b.dataset.act, d = b.dataset;
+  const now = new Date();
+  switch (a) {
+    case 'tab': closeSheet(); goTab(d.tab); return;
+    case 'add': openAdd({ date: d.date, time: d.time, course: d.course }); return;
+    case 'open': openItem(d.kind, d.id); return;
+    case 'close-sheet': closeSheet(); return;
+    case 'edit-today': editing = !editing; render(); return;
+    case 'plan': planOpen = true; render(); return;
+    case 'plan-close': planOpen = false; render(); return;
+    case 'copy-plan': copyPlan(); return;
+    case 'cal-prev': shiftCal(-1); return;
+    case 'cal-next': shiftCal(1); return;
+    case 'cal-today': calStart = null; render(); scrollCalToNow(); return;
+    case 'due-toggle': {
+      const it = state.items.find(i => i.id === d.id);
+      if (it) it.done = !it.done;
+      break;
+    }
+    case 'due-delete': {
+      if (!confirm('Delete this item?')) return;
+      const it = state.items.find(i => i.id === d.id);
+      state.items = state.items.filter(i => i.id !== d.id);
+      if (it && !it.added) state.deleted.push(keyOf(it));
+      closeSheet();
+      break;
+    }
+    case 'todo-toggle': {
+      const t = state.todos.find(x => x.id === d.id);
+      if (t) { t.done = !t.done; t.doneOn = t.done ? ymd(now) : null; }
+      break;
+    }
+    case 'todo-delete': {
+      if (!confirm('Delete this to-do?')) return;
+      state.todos = state.todos.filter(x => x.id !== d.id);
+      closeSheet();
+      break;
+    }
+    case 'workout-toggle': {
+      if (state.training.done[d.date]) delete state.training.done[d.date];
+      else state.training.done[d.date] = true;
+      break;
+    }
+    case 'routine-reset': delete state.overrides[d.id]; closeSheet(); break;
+    case 'goal-inc':
+    case 'goal-dec': {
+      const g = currentGoals(now);
+      g.counts[d.goal] = Math.max(0, (g.counts[d.goal] || 0) + (a === 'goal-inc' ? 1 : -1));
+      break;
+    }
+    case 'card-up': moveCard(d.card, -1); break;
+    case 'card-down': moveCard(d.card, 1); break;
+    case 'card-hide': if (!state.layout.hidden.includes(d.card)) state.layout.hidden.push(d.card); break;
+    case 'card-show': state.layout.hidden = state.layout.hidden.filter(x => x !== d.card); break;
+    case 'reset': {
+      if (!confirm('Reset class due dates to the starting data? Your to-dos, goals, and training stay.')) return;
+      state = Object.assign(state, { seedVersion: SEED_VERSION, items: seedItems([]), deleted: [] });
+      applyMath(mathCache);
+      toast('Class due dates reset.');
+      break;
+    }
+    default: return;
   }
+  if (d.close) closeSheet();
   save();
   render();
 });
 
-$('plan-btn').addEventListener('click', showPlan);
-$('copy-btn').addEventListener('click', copyPlan);
+const calEl = $('cal');
+// Taps on empty calendar space add something there. Runs before the page-wide handler.
+calEl.addEventListener('click', e => {
+  if (suppressClick) { suppressClick = false; e.stopPropagation(); e.preventDefault(); return; }
+  if (e.target.closest('[data-act]')) return;
+  const col = e.target.closest('.col');
+  if (col) {
+    const r = col.getBoundingClientRect();
+    const min = Math.floor((START_H * 60 + (e.clientY - r.top) / PX) / 30) * 30;
+    openAdd({ date: col.dataset.date, time: fromMin(Math.min(min, 23 * 60 + 30)) });
+    return;
+  }
+  const c = e.target.closest('.adcell');
+  if (c) openAdd({ date: c.dataset.date });
+}, true);
 
-$('add-form').addEventListener('submit', e => {
+calEl.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  const b = e.target.closest('.blk[data-drag]');
+  if (b) beginDrag(b, e.clientX, e.clientY, 'mouse');
+});
+document.addEventListener('mousemove', e => {
+  if (!drag || drag.type !== 'mouse') return;
+  if (!drag.active) {
+    if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 5) return;
+    startDrag();
+  }
   e.preventDefault();
-  const form = e.target;
-  const f = new FormData(form);
-  let course = String(f.get('course')).trim();
-  const title = String(f.get('title')).trim();
-  const date = String(f.get('date'));
-  const time = String(f.get('time') || '23:59');
-  if (!course || !title || !date) return;
-  const match = courseOrder().find(c => c.toLowerCase() === course.toLowerCase());
-  if (match) course = match;
-  const [y, m, d] = date.split('-').map(Number);
-  const [h, mi] = time.split(':').map(Number);
-  state.items.push({
-    id: 'a' + Date.now(), course, title, type: String(f.get('type')),
-    due: [y, m, d, h || 0, mi || 0], notes: '', done: false, added: true,
-  });
-  save();
-  render();
-  form.reset();
-  form.elements.time.value = '23:59';
-  $('add-flash').textContent = 'Added ' + course + ' ' + title + '.';
+  moveDrag(e.clientX, e.clientY);
+});
+document.addEventListener('mouseup', () => {
+  if (!drag || drag.type !== 'mouse') return;
+  if (drag.active) endDrag(); else cancelDrag();
 });
 
-$('reset').addEventListener('click', () => {
-  if (!confirm('Reset due dates to the starting data? Your to-dos, goals, and training stay.')) return;
-  state = { seedVersion: SEED_VERSION, items: seedItems([]), deleted: [], todos: state.todos, goals: state.goals, training: state.training };
-  applyMath(mathCache);
+calEl.addEventListener('touchstart', e => {
+  if (e.touches.length > 1) { cancelDrag(); swipe = null; return; }
+  const t = e.touches[0];
+  swipe = { x: t.clientX, y: t.clientY, at: Date.now() };
+  const b = e.target.closest('.blk[data-drag]');
+  if (b) {
+    beginDrag(b, t.clientX, t.clientY, 'touch');
+    drag.timer = setTimeout(startDrag, 380);
+  }
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (!drag || drag.type !== 'touch') return;
+  const t = e.touches[0];
+  if (!drag.active) {
+    if (Math.hypot(t.clientX - drag.x0, t.clientY - drag.y0) > 8) cancelDrag(); // the finger is scrolling
+    return;
+  }
+  e.preventDefault();
+  moveDrag(t.clientX, t.clientY);
+}, { passive: false });
+document.addEventListener('touchend', e => {
+  if (drag && drag.type === 'touch') {
+    if (drag.active) { endDrag(); swipe = null; return; }
+    cancelDrag();
+  }
+  if (swipe && tab === 'calendar') {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > 2 * Math.abs(dy) && Date.now() - swipe.at < 700) shiftCal(dx < 0 ? 1 : -1);
+  }
+  swipe = null;
+});
+document.addEventListener('touchcancel', () => { if (drag && drag.type === 'touch') cancelDrag(); swipe = null; });
+
+const todoForm = $('todo-form');
+todoForm.elements.when.addEventListener('change', e => { $('todo-date-wrap').hidden = e.target.value !== 'date'; });
+todoForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const text = todoForm.elements.text.value.trim();
+  if (!text) return;
+  const now = new Date();
+  const when = todoForm.elements.when.value;
+  let date = '';
+  if (when === 'today') date = ymd(now);
+  else if (when === 'tomorrow') date = ymd(addDays(now, 1));
+  else if (when === 'date') date = todoForm.elements.date.value || ymd(now);
+  state.todos.push({ id: 't' + Date.now(), text, date, done: false, doneOn: null });
   save();
   render();
-  $('plan-out').hidden = true;
-  $('plan-tools').hidden = true;
+  todoForm.reset();
+  $('todo-date-wrap').hidden = true;
+  todoForm.elements.text.focus();
+  toast('Added.');
+});
+
+let lastDays = calDays();
+addEventListener('resize', () => {
+  const n = calDays();
+  if (n !== lastDays) { lastDays = n; render(); }
+});
+
+// Keep the clock and the now-line current, without wiping something you're typing.
+function tick() {
+  const a = document.activeElement;
+  if (sheet.open || (a && a.closest('main') && a.matches('input, select, textarea'))) return;
+  render();
+}
+setInterval(tick, 60000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  tick();
+  if (!mathCache || Date.now() - mathCache.at > 30 * 60000) syncMath();
 });
 
 applyMath(mathCache);
 render();
 syncMath();
-setInterval(render, 60000);
 </script>
 </body>
 </html>
